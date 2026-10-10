@@ -25,6 +25,21 @@ platforms: [linux, macos, windows]
 
 开始只发一句范围与操作摘要，然后调用工具。正常低影响步骤不逐条询问。遇到范围变化、可能影响可用性、读写敏感数据或成本变化时停在边界请求决定。
 
+## How to Run
+
+在独立 HermesYF 工作目录，通过 `terminal` 运行：
+
+```sh
+python3 -m yf_tools.tool_inventory
+python3 -m yf_tools.assessment_plan --policy /private/policy.json --target http://APPROVED_IP:PORT/
+python3 -m yf_tools.assessment_run --policy /private/policy.json --targets /private/targets.json
+python3 -m yf_tools.scan_report --input /private/nuclei.jsonl
+```
+
+`assessment_run` 已执行的类型仅为 `http_baseline`，支持一批字面量 IP URL。策略必须包含 `allowed_tests: ["http_baseline"]`、批准端口 `http_ports`、精确路径 `http_paths`、正速率 `requests_per_second`、数量上限 `max_targets` 和带时区的 `window_start`/`window_end`。输入由 `read_file` 核对；真实策略与目标不得放进公开仓库。
+
+运行器先验证全部目标，串行按请求开始间隔调度，窗口到期不启动新请求，429/503 暂停批次。请求无重试、不跟随跳转，结果不含原始响应头。`completed` 仅表示任务走完，不表示没有漏洞；`transport_error` 单独列为检测失败。域名、Nuclei 执行和其他任务类型仍未接入，不得自动以别的命令补跑。此接入依赖 Agent 加载技能并调用 `terminal`，没有新增核心模型工具，也尚无真实模型自主调用验收。
+
 ## 公网漏洞扫描
 
 自有或明确授权的公网资产采用[公网扫描工作流](references/public-scan.md)。使用 `terminal` 检查工具并执行批准任务，使用 `read_file` 复核模板和证据；公网可达不等于授权。该指导覆盖资产核对、服务识别、模板审核、停止条件、误报复核与脱敏报告，不宣称已经集成扫描执行器。

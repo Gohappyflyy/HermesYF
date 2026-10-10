@@ -31,6 +31,14 @@
 
 仅本地 HTTP 靶场已回归，域名 DNS 固定、批准路径、窗口、全局速率调度、TLS 靶场以及 Agent 循环接入尚未实现；不是完整批量公网执行器。当前每次调用只发一次请求，不提供跨调用限速保证。新增 6 项测试（含本地真实 HEAD、302 不跟随、范围/端口阻断），总计 43 项。
 
+## 批量 HTTP 运行与技能接入
+
+`python3 -m yf_tools.assessment_run --policy /private/policy.json --targets /private/targets.json`
+
+目标文件为 URL JSON 数组。当前只执行 `http_baseline`；策略补充精确路径 `http_paths`、数量上限 `max_targets`、带时区的 `window_start`/`window_end`。先校验全批次，串行限速（仅单进程，不保证多个进程共享限速），每次请求前重验窗口，429/503 暂停。无自动重试，无其他类型静默降级执行。传输错误仍会使单项失败，批次 `completed` 不是全部检测成功。请求可能跨窗口结束，最长受单项 socket 超时限制；不是强制终止的总墙钟预算。技能已有这些 CLI 的 `terminal` 调用入口，未验证真实模型自主调用。
+
+新增 8 项检查，包括真实本地 HTTP 批次执行。YF 测试总计 51 项；上游完整测试和公网扫描尚未验收。前文“未有执行器”描述仅适用于 Nuclei 等未接入类型，HTTP 执行能力以此节为准。
+
 ## 使用
 
 ```sh
