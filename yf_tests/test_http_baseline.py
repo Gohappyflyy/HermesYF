@@ -26,6 +26,27 @@ class HTTPBaselineTests(unittest.TestCase):
     def policy(self):
         return {'targets':['127.0.0.1'], 'exclude':[], 'allowed_tests':['http_baseline'],
                 'requests_per_second':1, 'http_ports':[self.port]}
+    def test_cli_artifact_end_to_end(self):
+        from datetime import datetime, timezone, timedelta
+        from pathlib import Path
+        import tempfile, subprocess, sys, json, hashlib
+        p=self.policy();now=datetime.now(timezone.utc)
+        p.update(http_paths=['/'], max_targets=1,
+                 window_start=(now-timedelta(minutes=1)).isoformat(),
+                 window_end=(now+timedelta(minutes=1)).isoformat())
+        with tempfile.TemporaryDirectory() as directory:
+            directory=Path(directory)
+            policy=directory/'policy.json';targets=directory/'targets.json';report=directory/'report.json'
+            policy.write_text(json.dumps(p))
+            targets.write_text(json.dumps([f'http://127.0.0.1:{self.port}/']))
+            result=subprocess.run([sys.executable,'-m','yf_tools.assessment_run',
+                                   '--policy',str(policy),'--targets',str(targets),'--output',str(report)],
+                                  cwd=Path(__file__).resolve().parents[1],capture_output=True,text=True,timeout=20)
+            self.assertEqual(result.returncode,0,result.stderr)
+            metadata=json.loads(result.stdout)['report_artifact']
+            self.assertEqual(metadata['sha256'],hashlib.sha256(report.read_bytes()).hexdigest())
+            self.assertEqual(json.loads(report.read_text())['results'][0]['http_status'],200)
+
     def test_cli_end_to_end_json_report(self):
         from datetime import datetime, timezone, timedelta
         from pathlib import Path
