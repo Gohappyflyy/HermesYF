@@ -27,18 +27,44 @@ platforms: [linux, macos, windows]
 
 ## How to Run
 
-在独立 HermesYF 工作目录，通过 `terminal` 运行：
+在独立 HermesYF 工作目录，通过 `terminal` 运行完整评估：
 
 ```sh
+# 1. 工具发现
 python3 -m yf_tools.tool_inventory
-python3 -m yf_tools.assessment_plan --policy /private/policy.json --target http://APPROVED_IP:PORT/
-python3 -m yf_tools.assessment_run --policy /private/policy.json --targets /private/targets.json
+
+# 2. 离线任务规划
+python3 -m yf_tools.assessment_plan --policy /private/policy.json --target https://example.test/
+
+# 3. 统一评估执行（HTTP基线 + 端口扫描 + 模板扫描）
+python3 -m yf_tools.assessment_run \
+  --policy /private/policy.json \
+  --targets /private/targets.json \
+  --output /private/report-$(date +%Y%m%d-%H%M%S).json
+
+# 4. 结果整理（可选，用于已有 Nuclei JSONL）
 python3 -m yf_tools.scan_report --input /private/nuclei.jsonl
 ```
 
-`assessment_run` 已执行的类型仅为 `http_baseline`，支持一批字面量 IP URL。策略必须包含 `allowed_tests: ["http_baseline"]`、批准端口 `http_ports`、精确路径 `http_paths`、正速率 `requests_per_second`、数量上限 `max_targets` 和带时区的 `window_start`/`window_end`。输入由 `read_file` 核对；真实策略与目标不得放进公开仓库。
+**统一运行器现支持三种任务类型：**
+- `http_baseline`: HTTP/HTTPS 响应头基线检查（支持域名固定DNS和字面量IP）
+- `port_scan`: Nmap TCP 服务发现（需要 nmap 已安装）
+- `template_scan`: Nuclei 模板扫描（需要 nuclei 已安装）
 
-运行器先验证全部目标，串行按请求开始间隔调度，窗口到期不启动新请求，429/503 暂停批次。请求无重试、不跟随跳转，结果不含原始响应头。`completed` 仅表示任务走完，不表示没有漏洞；`transport_error` 单独列为检测失败。域名、Nuclei 执行和其他任务类型仍未接入，不得自动以别的命令补跑。此接入依赖 Agent 加载技能并调用 `terminal`，没有新增核心模型工具，也尚无真实模型自主调用验收。
+**策略必需字段：**
+- 通用：`allowed_tests` 列表、`requests_per_second`、`max_targets`、`window_start`/`window_end`（带时区）
+- HTTP：`http_ports` + `http_paths`；域名需 `dns_addresses` 映射
+- 端口扫描：`port_scan_ports`（最多64个端口）
+- 模板扫描：`nuclei_templates` + `approved_template_dir`（最多100个模板）
+
+**执行特性：**
+- 按目标×任务类型笛卡尔积顺序执行，共享速率限制和时间窗口
+- 429/503 触发 backpressure 暂停整个批次
+- 单个任务失败不阻止其他任务（非致命错误）
+- 返回聚合状态和按类型计数
+- `--output` 可原子发布受限权限报告文件
+
+此接入依赖 Agent 加载技能并调用 `terminal`，没有新增核心模型工具。真实模型自主调用验收待完成。
 
 ## 公网漏洞扫描
 
