@@ -11,6 +11,12 @@
 - `yf_tools/tool_inventory.py`：8 个 CLI 的本地版本探测，明确区分缺失、超时、探测失败和同名软件身份未验证；不安装软件、不发起目标扫描。运行 `python3 -m yf_tools.tool_inventory`。版本命令仍会执行 PATH 中的本地程序，仅用于可信安装环境。新增 6 项测试，与原有测试合计 20 项。
 - `skills/security/hermesyf-authorized-assessment/SKILL.md`：授权范围内直接行动、工具发现与证据工作流。技能不是自动扫描器；实际工具安装、靶场验收和运行时自动化尚未实现。
 
+## 授权策略与离线任务规划
+
+`python3 -m yf_tools.assessment_plan --policy yf_examples/assessment-policy.json --target https://example.test`
+
+支持精确域名、IP、CIDR、排除项优先和测试类型声明。子域不隐式授权。策略示例只含保留的演示地址，须按真实授权记录创建独立策略。当前仅离线生成任务，不解析 DNS、不连接目标、不证明授权真实性；不是可直接部署的执行期安全边界。策略尚未包含端口、路径、时间窗口或单项测试参数，实际执行器必须补齐这些字段并重新验证地址/重定向。新增 8 项测试，全部 YF 工具测试合计 28 项。
+
 ## 使用
 
 ```sh
