@@ -26,6 +26,18 @@ class HTTPBaselineTests(unittest.TestCase):
     def policy(self):
         return {'targets':['127.0.0.1'], 'exclude':[], 'allowed_tests':['http_baseline'],
                 'requests_per_second':1, 'http_ports':[self.port]}
+    def test_batch_runner_real_requests(self):
+        from yf_tools.assessment_run import run
+        from datetime import datetime, timezone, timedelta
+        p=self.policy();now=datetime.now(timezone.utc)
+        p.update(http_paths=['/','/redirect'], max_targets=2,
+                 window_start=(now-timedelta(minutes=1)).isoformat(),
+                 window_end=(now+timedelta(minutes=1)).isoformat())
+        urls=[f'http://127.0.0.1:{self.port}/',f'http://127.0.0.1:{self.port}/redirect']
+        result=run(p,urls)
+        self.assertEqual(result['status'],'completed')
+        self.assertEqual([r['http_status'] for r in result['results']],[200,302])
+
     def test_actual_head_and_sensitive_headers_omitted(self):
         from yf_tools.http_baseline import inspect
         import json
