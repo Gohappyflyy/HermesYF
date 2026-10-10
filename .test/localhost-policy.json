@@ -1,0 +1,12 @@
+{
+  "targets": ["127.0.0.1"],
+  "exclude": [],
+  "allowed_tests": ["http_baseline", "port_scan"],
+  "http_ports": [8000],
+  "http_paths": ["/"],
+  "port_scan_ports": [22, 80, 443, 8000, 8080],
+  "requests_per_second": 2,
+  "max_targets": 5,
+  "window_start": "2024-01-01T00:00:00+00:00",
+  "window_end": "2099-12-31T23:59:59+00:00"
+}
