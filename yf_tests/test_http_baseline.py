@@ -26,6 +26,28 @@ class HTTPBaselineTests(unittest.TestCase):
     def policy(self):
         return {'targets':['127.0.0.1'], 'exclude':[], 'allowed_tests':['http_baseline'],
                 'requests_per_second':1, 'http_ports':[self.port]}
+    def test_cli_end_to_end_json_report(self):
+        from datetime import datetime, timezone, timedelta
+        from pathlib import Path
+        import tempfile, subprocess, sys, json
+        p=self.policy();now=datetime.now(timezone.utc)
+        p.update(http_paths=['/'], max_targets=1,
+                 window_start=(now-timedelta(minutes=1)).isoformat(),
+                 window_end=(now+timedelta(minutes=1)).isoformat())
+        with tempfile.TemporaryDirectory() as directory:
+            policy=Path(directory)/'policy.json';targets=Path(directory)/'targets.json'
+            policy.write_text(json.dumps(p))
+            targets.write_text(json.dumps([f'http://127.0.0.1:{self.port}/']))
+            result=subprocess.run([sys.executable,'-m','yf_tools.assessment_run',
+                                   '--policy',str(policy),'--targets',str(targets)],
+                                  cwd=Path(__file__).resolve().parents[1],
+                                  capture_output=True,text=True,timeout=20)
+        self.assertEqual(result.returncode,0,result.stderr)
+        report=json.loads(result.stdout)
+        self.assertEqual(report['results'][0]['http_status'],200)
+        self.assertEqual(report['status'],'completed')
+        self.assertNotIn('SECRET',result.stdout)
+
     def test_real_backpressure_stops_batch(self):
         from yf_tools.assessment_run import run
         from datetime import datetime, timezone, timedelta
