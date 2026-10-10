@@ -73,7 +73,10 @@ def run(policy, targets):
         if result.get('http_status') in (429,503):
             return {'kind':'http_assessment_run','status':'paused_backpressure', 'results':results,
                     'unprocessed_count':len(targets)-index-1}
-    return {'kind':'http_assessment_run','status':'completed', 'results':results,
+    failed_count = sum(item.get('status') != 'observed' for item in results)
+    return {'kind':'http_assessment_run',
+            'status':'completed_with_errors' if failed_count else 'completed',
+            'results':results, 'failed_count':failed_count,
             'unprocessed_count':0, 'vulnerability_verified':False}
 
 
