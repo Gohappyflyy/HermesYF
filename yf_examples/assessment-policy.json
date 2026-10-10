@@ -1,0 +1,6 @@
+{
+  "targets": ["example.test", "192.0.2.0/24"],
+  "exclude": ["192.0.2.9"],
+  "allowed_tests": ["http_baseline", "tls_baseline", "port_scan"],
+  "requests_per_second": 2
+}
