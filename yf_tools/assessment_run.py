@@ -9,6 +9,7 @@ import time
 from urllib.parse import urlsplit
 from yf_tools.assessment_plan import build_plan, PlanError
 from yf_tools.http_baseline import inspect
+from yf_tools.pinned_http import approved_addresses
 
 
 def check_window(policy):
@@ -42,9 +43,10 @@ def validate(policy, targets):
         url = urlsplit(target)
         try:
             address = ipaddress.ip_address(plan['host'])
-        except ValueError as exc:
-            raise PlanError('literal IP required') from exc
-        if address.is_unspecified or address.is_multicast:
+        except ValueError:
+            approved_addresses(policy, plan['host'])
+            address = None
+        if address is not None and (address.is_unspecified or address.is_multicast):
             raise PlanError('unsupported IP')
         if url.scheme not in ('http','https') or url.query or url.fragment:
             raise PlanError('invalid target URL')

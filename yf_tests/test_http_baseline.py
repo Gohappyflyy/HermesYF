@@ -113,7 +113,7 @@ class HTTPBaselineTests(unittest.TestCase):
         with patch('urllib.request.OpenerDirector.open') as send:
             with self.assertRaises(PlanError): inspect(p, f'http://127.0.0.1:{self.port}/')
             send.assert_not_called()
-    def test_dns_hosts_not_yet_supported(self):
+    def test_dns_hosts_require_explicit_address_map(self):
         from yf_tools.http_baseline import inspect
         from yf_tools.assessment_plan import PlanError
         p=self.policy();p['targets']=['example.test'];p['http_ports']=[80]

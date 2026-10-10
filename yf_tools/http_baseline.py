@@ -1,4 +1,4 @@
-"""One HEAD request to an explicitly approved literal IP and port; no redirects."""
+"""One HEAD to an approved IP or DNS-pinned domain and port; no redirects."""
 import argparse
 import ipaddress
 import json
@@ -6,8 +6,10 @@ from pathlib import Path
 import sys
 import urllib.error
 import urllib.request
+import http.client
 from urllib.parse import urlsplit
 from yf_tools.assessment_plan import build_plan, PlanError
+from yf_tools.pinned_http import head
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
@@ -23,9 +25,9 @@ def inspect(policy, target):
         raise PlanError('explicit HTTP(S) URL without query/fragment required')
     try:
         address = ipaddress.ip_address(plan['host'])
-    except ValueError as exc:
-        raise PlanError('literal IP required; DNS pinning is not implemented') from exc
-    if address.is_unspecified or address.is_multicast:
+    except ValueError:
+        address = None
+    if address is not None and (address.is_unspecified or address.is_multicast):
         raise PlanError('unsupported IP address')
     port = url.port or (443 if url.scheme == 'https' else 80)
     ports = policy.get('http_ports')
@@ -33,6 +35,12 @@ def inspect(policy, target):
         raise PlanError('explicit http_ports list required')
     if port not in ports:
         raise PlanError('port not approved')
+    if address is None:
+        try:
+            with head(policy, plan['host'], port, url.scheme, url.path or '/') as response:
+                return observation(response)
+        except (OSError, http.client.HTTPException):
+            return transport_error()
     # Disable ambient proxy routing; default TLS verification remains enabled.
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
     req = urllib.request.Request(target, method='HEAD', headers={'User-Agent':'HermesYF-HTTPBaseline/0.1'})
@@ -41,17 +49,24 @@ def inspect(policy, target):
     except urllib.error.HTTPError as exc:
         response = exc
     except (urllib.error.URLError, OSError):
-        return {'kind':'http_baseline', 'status':'transport_error', 'method':'HEAD',
-                'redirect_followed':False, 'vulnerability_verified':False}
+        return transport_error()
     with response:
-        # Only presence flags: target headers may contain secrets or injected instructions.
-        names = ['strict-transport-security', 'content-security-policy',
-                 'x-content-type-options', 'x-frame-options', 'referrer-policy']
-        result = {'kind':'http_baseline', 'status':'observed', 'method':'HEAD',
-                  'http_status':response.code, 'redirect_followed':False,
-                  'vulnerability_verified':False,
-                  'header_presence':{name: response.headers.get(name) is not None for name in names}}
-    return result
+        return observation(response)
+
+
+def transport_error():
+    return {'kind':'http_baseline', 'status':'transport_error', 'method':'HEAD',
+            'redirect_followed':False, 'vulnerability_verified':False}
+
+
+def observation(response):
+    # Only presence flags: target headers may contain secrets or injected instructions.
+    names = ['strict-transport-security', 'content-security-policy',
+             'x-content-type-options', 'x-frame-options', 'referrer-policy']
+    return {'kind':'http_baseline', 'status':'observed', 'method':'HEAD',
+            'http_status':response.code, 'redirect_followed':False,
+            'vulnerability_verified':False,
+            'header_presence':{name: response.headers.get(name) is not None for name in names}}
 
 
 def main():

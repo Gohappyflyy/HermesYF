@@ -27,7 +27,7 @@
 
 `python3 -m yf_tools.http_baseline --policy /path/to/policy.json --target http://APPROVED_IP:PORT/`
 
-策略须包含 `http_baseline` 与显式 `http_ports` 数组。仅支持字面量 IP，一次 HEAD 请求，10 秒超时，不跟随重定向、不使用环境代理；HTTPS 保持证书验证。输出状态码和安全响应头存在标记，不输出原始头值、Cookie、Location 或正文。URL 查询串、片段与内嵌凭据不接受。返回传输错误不等于目标安全，缺少响应头不直接确认为漏洞。
+策略须包含 `http_baseline` 与显式 `http_ports` 数组。支持字面量 IP，以及具有显式 `dns_addresses` 映射的精确授权域名（详见下节）。一次 HEAD 请求，10 秒 socket 超时，不跟随重定向、不使用环境代理；HTTPS 保持证书验证。输出状态码和安全响应头存在标记，不输出原始头值、Cookie、Location 或正文。URL 查询串、片段与内嵌凭据不接受。返回传输错误不等于目标安全，缺少响应头不直接确认为漏洞。
 
 仅本地 HTTP 靶场已回归，域名 DNS 固定、批准路径、窗口、全局速率调度、TLS 靶场以及 Agent 循环接入尚未实现；不是完整批量公网执行器。当前每次调用只发一次请求，不提供跨调用限速保证。新增 6 项测试（含本地真实 HEAD、302 不跟随、范围/端口阻断），总计 43 项。
 
@@ -42,6 +42,22 @@
 ## 当前执行验收补充
 
 HTTP 传输失败现在使批次返回 `completed_with_errors`，不再返回普通 `completed`；新增本地真实 429 暂停、CLI 子进程调用与报告制品端到端测试。`assessment_run --output /private/new-report.json` 可发布新报告：同目录临时文件、fsync、硬链接原子发布、禁止覆盖/符号链接目的文件、POSIX 权限 0600、读回字节与 SHA-256。依赖文件系统硬链接支持，未保证断电后的目录项持久化；报告路径所在目录应可信且受限。窗口/范围内单进程 HTTP 基线链路已测试，其他扫描器与模型自主调用仍待验收。YF 回归共 60 项。
+
+## 域名 HTTP 固定连接（本次验收）
+
+`yf_tools/pinned_http.py` 使用标准库连接。域名仍须在 `targets` 中精确授权，IP/CIDR 或其他域名不能隐式授权它，`exclude` 继续优先。域名必须额外提供以规范化域名（小写、无末尾点）为键、非空字面量 IP 列表为值的映射，例如：
+
+```json
+{"dns_addresses": {"app.test": ["127.0.0.1"]}, "allow_private_dns": true}
+```
+
+此片段**仅用于明确授权的本地实验室**，不是完整执行策略；须同时配置范围、测试类型、速率、端口，批量运行还须配置路径、窗口和数量上限。生产环境不要开启 `allow_private_dns`。默认拒绝 DNS 指向 loopback/private/link-local（含 IPv4-mapped IPv6），只有 JSON 布尔值 `true` 可放行；unspecified/multicast 始终拒绝。字面量 IP 原有路径和授权规则保持不变，不受这个域名专用开关影响。
+
+每次请求前使用一次 `getaddrinfo(AF_UNSPEC, SOCK_STREAM, IPPROTO_TCP)` 检查返回的所有 A/AAAA 地址；只要任一地址未列入该域名批准列表，就在连接前拒绝整个请求。解析失败/空结果也拒绝。通过后只连接第一个已验证地址，直接创建指定地址族的 socket，不在连接时再次解析，不回退其他地址、不自动重试。HTTP `Host` 和 HTTPS SNI 使用原域名而不是 IP；TLS 默认信任库、证书链及主机名验证均保留。批量入口先离线验证所有目标/映射形状，再在每项实际执行时解析 DNS；后续目标的 DNS 拒绝可能发生在此前合规请求已经完成之后，并以策略错误中止批次，不伪装成完成报告。
+
+输出仍只包含状态码和安全头存在标记；不读取响应正文、不输出头值、不跟随重定向、不使用代理。新增本地真实 HTTP + mock DNS、域名批次、混合 A/AAAA 拒绝、重绑定阻断和本地 CA 签名 TLS 靶场测试；可信 CA 成功，错误主机名和不可信 CA 均失败，没有禁用验证。TLS 测试用临时生成的证书和私钥，未读取既有凭据。
+
+局限：DNS 的全部地址指系统解析器本次返回的记录，不是 DNS 区域全集；同步系统 DNS 查询没有单独总超时。仅首地址连接，单项 socket 超时不等于总墙钟预算。IPv6 数值连接通过 mock socket 验证，真实网络靶场仅 loopback IPv4。TLS 自定义可信上下文仅为内部测试 API，CLI 不新增信任库配置。未做公网扫描、上游完整回归或 Agent 自主调用验收。前文初版能力描述是历史记录，以本节为准。
 
 ## 使用
 
