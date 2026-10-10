@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 class Handler(BaseHTTPRequestHandler):
     def do_HEAD(self):
-        self.send_response(302 if self.path == '/redirect' else 200)
+        self.send_response(429 if self.path == '/busy' else (302 if self.path == '/redirect' else 200))
         self.send_header('Location', 'https://outside.invalid/?token=secret')
         self.send_header('Set-Cookie', 'session=SECRET')
         self.send_header('Server', 'fixture')
@@ -26,6 +26,18 @@ class HTTPBaselineTests(unittest.TestCase):
     def policy(self):
         return {'targets':['127.0.0.1'], 'exclude':[], 'allowed_tests':['http_baseline'],
                 'requests_per_second':1, 'http_ports':[self.port]}
+    def test_real_backpressure_stops_batch(self):
+        from yf_tools.assessment_run import run
+        from datetime import datetime, timezone, timedelta
+        p=self.policy();now=datetime.now(timezone.utc)
+        p.update(http_paths=['/busy','/'], max_targets=2,
+                 window_start=(now-timedelta(minutes=1)).isoformat(),
+                 window_end=(now+timedelta(minutes=1)).isoformat())
+        result=run(p,[f'http://127.0.0.1:{self.port}/busy',f'http://127.0.0.1:{self.port}/'])
+        self.assertEqual(result['status'],'paused_backpressure')
+        self.assertEqual(len(result['results']),1)
+        self.assertEqual(result['unprocessed_count'],1)
+
     def test_batch_runner_real_requests(self):
         from yf_tools.assessment_run import run
         from datetime import datetime, timezone, timedelta
