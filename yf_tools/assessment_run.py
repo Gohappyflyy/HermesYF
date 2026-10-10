@@ -84,6 +84,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--policy', required=True)
     parser.add_argument('--targets', required=True, help='JSON array of approved URLs')
+    parser.add_argument('--output', help='new report file; existing files are never overwritten')
     args = parser.parse_args()
     try:
         result = run(json.loads(Path(args.policy).read_text()), json.loads(Path(args.targets).read_text()))
@@ -93,7 +94,16 @@ def main():
     except KeyboardInterrupt:
         print('assessment_run: interrupted; no automatic retry', file=sys.stderr)
         return 130
-    print(json.dumps(result, indent=2, sort_keys=True))
+    if args.output:
+        from yf_tools.report_artifact import save
+        try:
+            artifact = save(args.output, result)
+        except (OSError, ValueError):
+            print('assessment_run: report publication failed; no automatic scan retry', file=sys.stderr)
+            return 3
+        print(json.dumps({'report_artifact': artifact}, sort_keys=True))
+    else:
+        print(json.dumps(result, indent=2, sort_keys=True))
     return 0 if result['status'] == 'completed' else 2
 
 if __name__ == '__main__':
