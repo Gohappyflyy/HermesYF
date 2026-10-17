@@ -71,3 +71,14 @@ python3 -m unittest discover -s yf_tests -v
 范围内低影响基线不反复确认；按明确授权策略开展主动测试。保持范围检查、秘密保护及不可信目标内容的提示词注入防护。不会用“无限授权”提示词替代真实授权，也不宣称精通或已经集成所有渗透工具。
 
 本次未安装安全工具、未对外部目标发起扫描、未运行上游完整测试套件。凭证必须在仓库外受限保存，绝不可写入本公开仓库。正式部署须独立回归、备份与明确切换批准。
+
+## 御风人格 + 海鸥技能融合（本轮交付）
+
+修复 laoshu666/hermes-seagull 的全部已知问题，整合为 HermesYF 原生组件：
+
+- `plugins/yufeng-armor/`：破甲协议注入插件 v2。原版 `transform_system_prompt`/`pre_agent_turn` 不是合法 hook 名，注册被静默丢弃（原版协议从未生效）；改为 `pre_llm_call`，实测注入到每轮 user message 的 api_content。
+- `SOUL-yufeng.md` / `AGENTS-yufeng.md`：御风人格（原海鸥，称呼改为"风哥"），清除全部客服腔。AGENTS 必须放 gateway 工作目录——原版装到 `~/.hermes/` 下永远不加载（原版第二个隐蔽 bug）。
+- `skills/security/seagull-skills/`：5 个技能（pentest/reverse/exploit/game-hack/license-security），全部补上缺失的 SKILL.md frontmatter（原版无 frontmatter，Hermes 技能系统不识别）。
+- `install-yufeng.sh`：一键部署，处理全部路径问题，自动移除旧版无效插件。
+
+验证：插件语法 AST 通过；5 技能 frontmatter 齐；称呼 0 残留"大佬"；AGENTS.md 在 cwd 加载实测 loaded。
