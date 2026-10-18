@@ -254,20 +254,45 @@ def _endpoint_disk_cache_put(normalized: str, cache: dict[str, dict[str, Any]]) 
 CONTEXT_PROBE_TIERS = [256_000, 128_000, 64_000, 32_000, 16_000, 8_000]
 DEFAULT_FALLBACK_CONTEXT = CONTEXT_PROBE_TIERS[0]
 
-# HermesYF: custom relay endpoints with known large-context models
-CUSTOM_ENDPOINT_CONTEXT = {
-    "http://39.98.71.17:5902/v1": 1_000_000,
-}
+# HermesYF: per-model real context windows (verified from official docs 2026-10)
+_YF_MODEL_CONTEXT = [
+    ("claude-opus-5",     1_000_000),
+    ("claude-opus-4",     200_000),
+    ("claude-fable",      1_000_000),
+    ("gpt-6-astra",       1_050_000),
+    ("gpt-6.1-sol",       1_050_000),
+    ("gpt-6-sol",         1_050_000),
+    ("gpt-6",             1_050_000),
+    ("gpt-5.6-sol",       1_050_000),
+    ("gpt-5.6-terra",     1_050_000),
+    ("gpt-5.6-luna",      1_050_000),
+    ("gpt-5.6",           1_050_000),
+    ("deepseek-v4.1",     1_048_576),
+    ("deepseek-v4",       1_048_576),
+    ("step-5-preview",    1_000_000),
+    ("step-5",            1_000_000),
+    ("gemini-4-argon",    1_048_576),
+    ("gemini-3.8-flash",  1_048_576),
+    ("gemini-4",          1_048_576),
+    ("glm-5.3",           1_048_576),
+    ("glm-5",             1_048_576),
+]
 
-def _get_custom_endpoint_context(base_url: str) -> int | None:
-    """Return context length override for known custom relay endpoints."""
-    from urllib.parse import urlparse
-    parsed = urlparse(base_url or "")
-    endpoint = f"{parsed.scheme}://{parsed.netloc}"
-    for ep, ctx in CUSTOM_ENDPOINT_CONTEXT.items():
-        if ep in (base_url or ""):
-            return ctx
-    return None
+_YF_ENDPOINT = "http://39.98.71.17:5902"
+
+
+def _get_yf_model_context(model: str, base_url: str) -> "int | None":
+    """Return the real context window for known models on the YF relay endpoint.
+    Matches by substring (longest match wins) so relay prefixes don't break lookup."""
+    if _YF_ENDPOINT not in (base_url or ""):
+        return None
+    model_l = (model or "").lower()
+    best = None
+    for pattern, ctx in _YF_MODEL_CONTEXT:
+        if pattern in model_l:
+            if best is None or len(pattern) > len(best[0]):
+                best = (pattern, ctx)
+    return best[1] if best else None
 _FALLBACK_WARNED: set = set()  # the fallback is never cached, so dedupe its warning per (model, base_url)
 
 
@@ -2101,10 +2126,10 @@ def _resolve_custom_endpoint_context_length(model: str, base_url: str, api_key: 
         "Set model.context_length in config.yaml to override.",
         model, base_url, f"{DEFAULT_FALLBACK_CONTEXT:,}",
     )
-    # HermesYF: custom relay endpoint override (before catalog match)
-    _yf_ctx = _get_custom_endpoint_context(base_url)
+    # HermesYF: per-model real context window (before catalog match)
+    _yf_ctx = _get_yf_model_context(model, base_url)
     if _yf_ctx:
-        logger.info("HermesYF: using custom endpoint context %s for model %r at %s", f"{_yf_ctx:,}", model, base_url)
+        logger.info("HermesYF: using verified context %s for model %r at %s", f"{_yf_ctx:,}", model, base_url)
         return _yf_ctx
     # 3b. Hardcoded catalog as a last resort: a proxied Anthropic gateway fails the probes above
     # but its model name still matches DEFAULT_CONTEXT_LENGTHS.
