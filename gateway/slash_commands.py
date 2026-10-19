@@ -896,6 +896,24 @@ class GatewaySlashCommandsMixin(
             set_mode_fn=self._write_approval_setter("memory", event))
         return out if out is not None else t("gateway.memory.unknown_subcommand")
 
+    @staticmethod
+    def _skills_listing_text() -> str:
+        """Alphabetical list of loadable skills (gateway /skills with no args). Best-effort:
+        scan failures degrade to a short notice instead of raising into the dispatcher."""
+        try:
+            from agent.skill_commands import get_skill_commands
+            cmds = get_skill_commands()
+        except Exception:
+            cmds = {}
+        if not cmds:
+            return "No skills found."
+        names = sorted(k.lstrip("/") for k in cmds)
+        lines = [f"技能列表（{len(names)} 个，/技能名 或让我 skill_view 加载）：", ""]
+        for n in names:
+            desc = (cmds.get("/" + n) or cmds.get(n) or {}).get("description", "")
+            lines.append(f"• {n}" + (f" — {desc.strip()}" if desc.strip() else ""))
+        return "\n".join(lines)
+
     async def _handle_skills_command(self, event: MessageEvent) -> str:
         """Handle /skills on the gateway — pending skill-write review only (hub stays CLI-only). Gated
         by ``skills.write_approval`` but still answers when staged writes exist after the gate is off
@@ -904,6 +922,8 @@ class GatewaySlashCommandsMixin(
         from tools import write_approval as wa
         args = event.get_command_args().strip().split()
         sub = args[0].lower() if args else ""
+        if not args:
+            return self._skills_listing_text()
         gate_off = not wa.write_approval_enabled(wa.SKILLS) and sub not in {"approval", "mode"}
         if gate_off and wa.pending_count(wa.SKILLS) == 0:
             return t("gateway.skills.gate_off")
