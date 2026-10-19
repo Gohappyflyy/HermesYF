@@ -14,105 +14,105 @@ exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for 
 exclude-newer-span = "P14D"
 
 [options.exclude-newer-package]
-agent-client-protocol = false
-aiohttp = false
-aiohttp-socks = false
-aiosqlite = false
-alibabacloud-dingtalk = false
-anthropic = false
-asyncpg = false
-azure-identity = false
-boto3 = false
-brotlicffi = false
-browser-harness = false
-certifi = false
-concurrent-log-handler = false
-croniter = false
-cryptography = false
-daytona = false
-ddgs = "2026-08-26T21:52:34Z"
-debugpy = false
-defusedxml = false
-dingtalk-stream = false
-discord-py = false
-edge-tts = false
 elevenlabs = false
-exa-py = false
-fal-client = false
-fastapi = false
-faster-whisper = false
-fire = false
-firecrawl-anydoc = false
-firecrawl-py = false
-google-api-python-client = false
+langfuse = "2026-09-09T16:01:26Z"
+setuptools = false
+modal = false
+pyyaml = false
+maturin = false
+numpy = false
+pvporcupine = false
 google-auth = false
-google-auth-httplib2 = false
-google-auth-oauthlib = false
+aiohttp = false
+starlette = false
+mistralai = false
+firecrawl-py = false
+parallel-web = false
+markdown = false
+opentelemetry-sdk = false
+prompt-toolkit = false
+fastapi = false
+anthropic = false
+pathspec = false
+ruff = false
+defusedxml = false
+websockets = false
+exa-py = false
+mcp = false
+python-olm = false
+wheel = false
+pytest = false
+pillow = false
+setuptools-rust = false
+tenacity = false
+sherpa-onnx-core = "2026-09-10T15:58:47Z"
+pyjwt = false
+slack-bolt = false
+fal-client = false
+asyncpg = false
+boto3 = false
+ruamel-yaml = false
+sherpa-onnx = "2026-09-10T17:00:04Z"
+huggingface-hub = false
+pytest-asyncio = false
 google-cloud-pubsub = false
+slack-sdk = false
+discord-py = false
+rich = false
+faster-whisper = false
+certifi = false
+debugpy = false
+ddgs = "2026-08-26T21:52:34Z"
+packaging = false
+unpaddedbase64 = false
+youtube-transcript-api = false
 h2 = false
+edge-tts = false
+microsoft-teams-apps = false
+aiohttp-socks = false
+sentencepiece = false
+opentelemetry-exporter-otlp-proto-http = false
+croniter = false
+browser-harness = false
+azure-identity = false
+lark-oapi = false
+firecrawl-anydoc = false
+google-api-python-client = false
+brotlicffi = false
+qrcode = false
+soundfile = "2026-06-06T08:58:48Z"
+vercel = false
+aiosqlite = false
+tzdata = false
+python-dotenv = false
+daytona = false
+uvicorn = false
+nemo-relay = false
+requests = false
 httplib2 = false
 httpx = false
-httpx2 = false
-huggingface-hub = false
-jinja2 = false
-langfuse = "2026-09-09T16:01:26Z"
-lark-oapi = false
-markdown = false
-maturin = false
-mautrix = false
-mcp = false
-microsoft-teams-apps = false
-mistralai = false
-modal = false
-nemo-relay = false
-neutts = "2026-07-22T14:54:23Z"
-numpy = false
-openai = false
-opentelemetry-exporter-otlp-proto-http = false
-opentelemetry-sdk = false
-packaging = false
-parallel-web = false
-pathspec = false
-pillow = false
 piper-tts = "2026-09-04T16:47:32Z"
-prompt-toolkit = false
-psutil = false
-pvporcupine = false
 pyasn1 = false
-pydantic = false
-pyjwt = false
-pytest = false
-pytest-asyncio = false
-python-dotenv = false
-python-multipart = false
-python-olm = false
-python-telegram-bot = false
-pyyaml = false
-qrcode = false
-requests = false
-rich = false
-ruamel-yaml = false
-ruff = false
-sentencepiece = false
-setuptools = false
-setuptools-rust = false
-sherpa-onnx = "2026-09-10T17:00:04Z"
-sherpa-onnx-core = "2026-09-10T15:58:47Z"
-slack-bolt = false
-slack-sdk = false
 snowballstemmer = false
-sounddevice = false
-soundfile = "2026-06-06T08:58:48Z"
-starlette = false
-tenacity = false
+concurrent-log-handler = false
+cryptography = false
+pydantic = false
+agent-client-protocol = false
+fire = false
+httpx2 = false
+google-auth-oauthlib = false
+python-multipart = false
 ty = false
-tzdata = false
-unpaddedbase64 = false
-uvicorn = false
-vercel = false
-websockets = false
-wheel = false
-youtube-transcript-api = false
+openai = false
+google-auth-httplib2 = false
+neutts = "2026-07-22T14:54:23Z"
+mautrix = false
+psutil = false
+python-telegram-bot = false
+jinja2 = false
+sounddevice = false
+alibabacloud-dingtalk = false
+dingtalk-stream = false
 
 [manifest]
 overrides = [
@@ -502,6 +502,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/8c/6b/eeff360196bb20b312c9e762a820fd1b2c6d809466c755ef57863478e454/apscheduler-3.11.3.tar.gz", hash = "sha256:cd2fcc9330039a81a5893472ad49facf23a6d5604cbe1d918c835c6de7834d5a", size = 110312, upload-time = "2026-06-28T19:39:22.493Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/42/c9/8638db32514dbb9157b3d82680c6faea89283523edf9ed2415ea3884f2ae/apscheduler-3.11.3-py3-none-any.whl", hash = "sha256:bbeb2ec02d23d3c06a6c07ed7f0f3939ada6680eb121fae809a69bb42c537a30", size = 66024, upload-time = "2026-06-28T19:39:20.982Z" },
+]
+
+[[package]]
+name = "async-timeout"
+version = "5.0.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/a5/ae/136395dfbfe00dfc94da3f3e136d0b13f394cba8f4841120e34226265780/async_timeout-5.0.1.tar.gz", hash = "sha256:d9321a7a3d5a6a5e187e824d2fa0793ce379a202935782d555d6e9d2735677d3", size = 9274, upload-time = "2024-11-06T16:41:39.6Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/fe/ba/e2081de779ca30d473f21f5b30e0e737c438205440784c7dfc81efc2b029/async_timeout-5.0.1-py3-none-any.whl", hash = "sha256:39e3809566ff85354557ec2398b55e096c8364bacac9405a7a1fa429e77fe76c", size = 6233, upload-time = "2024-11-06T16:41:37.9Z" },
 ]
 
 [[package]]
@@ -2343,6 +2352,10 @@ name = "hermes-agent"
 version = "0.0.0"
 source = { editable = "." }
 dependencies = [
+    { name = "aiofiles" },
+    { name = "aiohappyeyeballs" },
+    { name = "anyio" },
+    { name = "async-timeout" },
     { name = "browser-harness" },
     { name = "certifi" },
     { name = "concurrent-log-handler", marker = "sys_platform == 'win32'" },
@@ -2351,10 +2364,12 @@ dependencies = [
     { name = "fastapi" },
     { name = "fire" },
     { name = "firecrawl-anydoc" },
+    { name = "h11" },
     { name = "httptools" },
     { name = "httpx", extra = ["socks"] },
     { name = "jinja2" },
     { name = "markdown" },
+    { name = "multidict" },
     { name = "nemo-relay", marker = "(platform_machine == 'aarch64' and 'android' not in platform_release and sys_platform == 'linux') or (platform_machine == 'x86_64' and 'android' not in platform_release and sys_platform == 'linux') or (platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'AMD64' and sys_platform == 'win32') or (platform_machine == 'ARM64' and sys_platform == 'win32')" },
     { name = "openai" },
     { name = "packaging" },
@@ -2362,6 +2377,7 @@ dependencies = [
     { name = "pillow" },
     { name = "pillow-heif" },
     { name = "prompt-toolkit" },
+    { name = "propcache" },
     { name = "psutil", version = "7.2.2", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'android'" },
     { name = "psutil", version = "8.0.0", source = { git = "https://github.com/giampaolo/psutil.git?rev=380bd2b59c67b0e1b04bbf3a90b11744f4f96644#380bd2b59c67b0e1b04bbf3a90b11744f4f96644" }, marker = "sys_platform == 'android'" },
     { name = "ptyprocess", marker = "sys_platform != 'win32'" },
@@ -2375,10 +2391,13 @@ dependencies = [
     { name = "resvg-py" },
     { name = "rich" },
     { name = "ruamel-yaml" },
+    { name = "sniffio" },
     { name = "snowballstemmer" },
     { name = "tenacity" },
+    { name = "tinysegmenter" },
     { name = "tomli-w" },
     { name = "truststore" },
+    { name = "typing-extensions" },
     { name = "tzdata", marker = "sys_platform == 'win32'" },
     { name = "urllib3" },
     { name = "uvicorn" },
@@ -2388,6 +2407,7 @@ dependencies = [
     { name = "winrt-windows-foundation", marker = "sys_platform == 'win32'" },
     { name = "winrt-windows-foundation-collections", marker = "sys_platform == 'win32'" },
     { name = "winrt-windows-services-store", marker = "sys_platform == 'win32'" },
+    { name = "yarl" },
 ]
 
 [package.optional-dependencies]
@@ -2643,6 +2663,8 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "agent-client-protocol", marker = "extra == 'acp'", specifier = "==0.9.0" },
+    { name = "aiofiles", marker = "python_full_version >= '3.11'", specifier = "==24.1.0" },
+    { name = "aiohappyeyeballs", marker = "python_full_version >= '3.11'", specifier = "==2.7.1" },
     { name = "aiohttp", marker = "sys_platform == 'linux' and extra == 'matrix'", specifier = "==3.14.3" },
     { name = "aiohttp", marker = "extra == 'messaging'", specifier = "==3.14.3" },
     { name = "aiohttp", marker = "extra == 'slack'", specifier = "==3.14.3" },
@@ -2652,15 +2674,17 @@ requires-dist = [
     { name = "aiosqlite", marker = "sys_platform == 'linux' and extra == 'matrix'", specifier = "==0.22.1" },
     { name = "alibabacloud-dingtalk", marker = "extra == 'dingtalk'", specifier = "==2.2.42" },
     { name = "anthropic", marker = "extra == 'anthropic'", specifier = "==0.87.0" },
+    { name = "anyio", marker = "python_full_version >= '3.11'", specifier = "==4.14.2" },
+    { name = "async-timeout", marker = "python_full_version >= '3.11'", specifier = "==5.0.1" },
     { name = "asyncpg", marker = "sys_platform == 'linux' and extra == 'matrix'", specifier = "==0.31.0" },
     { name = "azure-identity", marker = "extra == 'azure-identity'", specifier = "==1.25.3" },
     { name = "boto3", marker = "extra == 'bedrock'", specifier = "==1.42.89" },
     { name = "brotlicffi", marker = "extra == 'messaging'", specifier = "==1.2.0.2" },
-    { name = "browser-harness", marker = "python_full_version >= '3.14'", specifier = "==0.1.13" },
-    { name = "certifi", marker = "python_full_version >= '3.14'", specifier = "==2026.5.20" },
-    { name = "concurrent-log-handler", marker = "python_full_version >= '3.14' and sys_platform == 'win32'", specifier = "==0.9.29" },
-    { name = "croniter", marker = "python_full_version >= '3.14'", specifier = "==6.0.0" },
-    { name = "cryptography", marker = "python_full_version >= '3.14'", specifier = "==50.0.1" },
+    { name = "browser-harness", marker = "python_full_version >= '3.11'", specifier = "==0.1.13" },
+    { name = "certifi", marker = "python_full_version >= '3.11'", specifier = "==2026.5.20" },
+    { name = "concurrent-log-handler", marker = "python_full_version >= '3.11' and sys_platform == 'win32'", specifier = "==0.9.29" },
+    { name = "croniter", marker = "python_full_version >= '3.11'", specifier = "==6.0.0" },
+    { name = "cryptography", marker = "python_full_version >= '3.11'", specifier = "==50.0.1" },
     { name = "daytona", marker = "extra == 'daytona'", specifier = "==0.155.0" },
     { name = "ddgs", marker = "extra == 'ddgs'", specifier = "==9.16.0" },
     { name = "defusedxml", marker = "extra == 'wecom'", specifier = "==0.7.1" },
@@ -2671,12 +2695,12 @@ requires-dist = [
     { name = "elevenlabs", marker = "extra == 'tts-premium'", specifier = "==1.59.0" },
     { name = "exa-py", marker = "extra == 'exa'", specifier = "==2.10.2" },
     { name = "fal-client", marker = "extra == 'fal'", specifier = "==0.13.1" },
-    { name = "fastapi", marker = "python_full_version >= '3.14'", specifier = ">=0.104.0,<1" },
+    { name = "fastapi", marker = "python_full_version >= '3.11'", specifier = ">=0.104.0,<1" },
     { name = "fastapi", marker = "extra == 'web'", specifier = "==0.133.1" },
     { name = "faster-whisper", marker = "(platform_machine != 'x86_64' and sys_platform == 'darwin' and extra == 'stt-whisper') or (platform_machine != 'ARM64' and sys_platform == 'win32' and extra == 'stt-whisper') or (sys_platform != 'darwin' and sys_platform != 'win32' and extra == 'stt-whisper')", specifier = "==1.2.1" },
     { name = "faster-whisper", marker = "(platform_machine != 'x86_64' and sys_platform == 'darwin' and extra == 'voice') or (platform_machine != 'ARM64' and sys_platform == 'win32' and extra == 'voice') or (sys_platform != 'darwin' and sys_platform != 'win32' and extra == 'voice')", specifier = "==1.2.1" },
-    { name = "fire", marker = "python_full_version >= '3.14'", specifier = "==0.7.1" },
-    { name = "firecrawl-anydoc", marker = "python_full_version >= '3.14'", specifier = "==0.2.4" },
+    { name = "fire", marker = "python_full_version >= '3.11'", specifier = "==0.7.1" },
+    { name = "firecrawl-anydoc", marker = "python_full_version >= '3.11'", specifier = "==0.2.4" },
     { name = "firecrawl-anydoc", marker = "extra == 'doc-extract'", specifier = "==0.2.4" },
     { name = "firecrawl-py", marker = "extra == 'firecrawl'", specifier = "==4.17.0" },
     { name = "google-api-python-client", marker = "extra == 'google'", specifier = "==2.194.0" },
@@ -2685,6 +2709,7 @@ requires-dist = [
     { name = "google-auth-httplib2", marker = "extra == 'google'", specifier = "==0.3.1" },
     { name = "google-auth-oauthlib", marker = "extra == 'google'", specifier = "==1.3.1" },
     { name = "google-cloud-pubsub", marker = "(platform_machine != 'ARM64' and extra == 'google-chat') or (sys_platform != 'win32' and extra == 'google-chat')", specifier = "==2.39.2" },
+    { name = "h11", marker = "python_full_version >= '3.11'", specifier = "==0.16.0" },
     { name = "hermes-agent", extras = ["acp"], marker = "extra == 'all'" },
     { name = "hermes-agent", extras = ["acp"], marker = "extra == 'termux'" },
     { name = "hermes-agent", extras = ["cron"], marker = "extra == 'all'" },
@@ -2703,16 +2728,16 @@ requires-dist = [
     { name = "hermes-agent", extras = ["web"], marker = "extra == 'termux-all'" },
     { name = "hermes-agent", extras = ["youtube"], marker = "extra == 'all'" },
     { name = "httplib2", marker = "extra == 'google'", specifier = "==0.32.0" },
-    { name = "httptools", marker = "python_full_version >= '3.14'", specifier = ">=0.6.3,<0.9" },
-    { name = "httpx", extras = ["socks"], marker = "python_full_version >= '3.14'", specifier = "==0.28.1" },
+    { name = "httptools", marker = "python_full_version >= '3.11'", specifier = ">=0.6.3,<0.9" },
+    { name = "httpx", extras = ["socks"], marker = "python_full_version >= '3.11'", specifier = "==0.28.1" },
     { name = "httpx2", marker = "extra == 'computer-use'", specifier = "==2.7.0" },
     { name = "httpx2", marker = "extra == 'mcp'", specifier = "==2.7.0" },
     { name = "huggingface-hub", marker = "extra == 'trace-upload'", specifier = "==1.24.0" },
-    { name = "jinja2", marker = "python_full_version >= '3.14'", specifier = "==3.1.6" },
+    { name = "jinja2", marker = "python_full_version >= '3.11'", specifier = "==3.1.6" },
     { name = "kittentts", marker = "(platform_machine != 'x86_64' and sys_platform == 'darwin' and extra == 'kittentts') or (platform_machine != 'ARM64' and sys_platform == 'win32' and extra == 'kittentts') or (sys_platform != 'darwin' and sys_platform != 'win32' and extra == 'kittentts')", url = "https://github.com/KittenML/KittenTTS/releases/download/0.8.1/kittentts-0.8.1-py3-none-any.whl" },
     { name = "langfuse", marker = "extra == 'langfuse'", specifier = "==4.15.2" },
     { name = "lark-oapi", marker = "extra == 'feishu'", specifier = "==1.6.8" },
-    { name = "markdown", marker = "python_full_version >= '3.14'", specifier = "==3.10.2" },
+    { name = "markdown", marker = "python_full_version >= '3.11'", specifier = "==3.10.2" },
     { name = "mautrix", extras = ["encryption"], marker = "sys_platform == 'linux' and extra == 'matrix'", specifier = "==0.21.1" },
     { name = "mcp", marker = "extra == 'computer-use'", specifier = "==2.0.0" },
     { name = "mcp", marker = "extra == 'mcp'", specifier = "==2.0.0" },
@@ -2720,50 +2745,52 @@ requires-dist = [
     { name = "misaki", extras = ["en"], marker = "(platform_machine != 'x86_64' and sys_platform == 'darwin' and extra == 'kittentts') or (platform_machine != 'ARM64' and sys_platform == 'win32' and extra == 'kittentts') or (sys_platform != 'darwin' and sys_platform != 'win32' and extra == 'kittentts')", git = "https://github.com/NousResearch/misaki.git?rev=f03fd2be7346952a83d3d4845c217fc7667f322d" },
     { name = "mistralai", marker = "extra == 'mistral'", specifier = "==2.4.8" },
     { name = "modal", marker = "extra == 'modal'", specifier = "==1.5.5" },
-    { name = "nemo-relay", marker = "(python_full_version >= '3.14' and platform_machine == 'aarch64' and 'android' not in platform_release and sys_platform == 'linux') or (python_full_version >= '3.14' and platform_machine == 'x86_64' and 'android' not in platform_release and sys_platform == 'linux') or (python_full_version >= '3.14' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version >= '3.14' and platform_machine == 'AMD64' and sys_platform == 'win32') or (python_full_version >= '3.14' and platform_machine == 'ARM64' and sys_platform == 'win32')", specifier = ">=0.10,<0.11" },
+    { name = "multidict", marker = "python_full_version >= '3.11'", specifier = "==6.7.1" },
+    { name = "nemo-relay", marker = "(python_full_version >= '3.11' and platform_machine == 'aarch64' and 'android' not in platform_release and sys_platform == 'linux') or (python_full_version >= '3.11' and platform_machine == 'x86_64' and 'android' not in platform_release and sys_platform == 'linux') or (python_full_version >= '3.11' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version >= '3.11' and platform_machine == 'AMD64' and sys_platform == 'win32') or (python_full_version >= '3.11' and platform_machine == 'ARM64' and sys_platform == 'win32')", specifier = ">=0.10,<0.11" },
     { name = "neutts", extras = ["all"], marker = "python_full_version < '3.14' and extra == 'neutts'", specifier = "==1.4.1" },
     { name = "numpy", marker = "extra == 'audio-io'", specifier = "==2.4.3" },
     { name = "numpy", marker = "extra == 'voice'", specifier = "==2.4.3" },
     { name = "numpy", marker = "extra == 'wake'", specifier = "==2.4.3" },
-    { name = "openai", marker = "python_full_version >= '3.14'", specifier = "==2.24.0" },
+    { name = "openai", marker = "python_full_version >= '3.11'", specifier = "==2.24.0" },
     { name = "opentelemetry-exporter-otlp-proto-http", marker = "extra == 'otlp'", specifier = "==1.39.1" },
     { name = "opentelemetry-sdk", marker = "extra == 'otlp'", specifier = "==1.39.1" },
-    { name = "packaging", marker = "python_full_version >= '3.14'", specifier = "==26.0" },
+    { name = "packaging", marker = "python_full_version >= '3.11'", specifier = "==26.0" },
     { name = "parallel-web", marker = "extra == 'parallel-web'", specifier = "==0.4.2" },
-    { name = "pathspec", marker = "python_full_version >= '3.14'", specifier = "==1.1.1" },
+    { name = "pathspec", marker = "python_full_version >= '3.11'", specifier = "==1.1.1" },
     { name = "pilk", marker = "extra == 'silk'", specifier = "==0.2.4" },
-    { name = "pillow", marker = "python_full_version >= '3.14'", specifier = "==12.3.0" },
-    { name = "pillow-heif", marker = "python_full_version >= '3.14'", specifier = ">=1.4.0,<2" },
+    { name = "pillow", marker = "python_full_version >= '3.11'", specifier = "==12.3.0" },
+    { name = "pillow-heif", marker = "python_full_version >= '3.11'", specifier = ">=1.4.0,<2" },
     { name = "piper-tts", marker = "(platform_machine != 'x86_64' and sys_platform == 'darwin' and extra == 'piper') or (platform_machine != 'ARM64' and sys_platform == 'win32' and extra == 'piper') or (sys_platform != 'darwin' and sys_platform != 'win32' and extra == 'piper')", specifier = "==1.8.0" },
     { name = "playwright", marker = "extra == 'google-meet'", specifier = "==1.62.0" },
-    { name = "prompt-toolkit", marker = "python_full_version >= '3.14'", specifier = "==3.0.52" },
-    { name = "psutil", marker = "python_full_version >= '3.14' and sys_platform == 'android'", git = "https://github.com/giampaolo/psutil.git?rev=380bd2b59c67b0e1b04bbf3a90b11744f4f96644" },
-    { name = "psutil", marker = "python_full_version >= '3.14' and sys_platform != 'android'", specifier = "==7.2.2" },
-    { name = "ptyprocess", marker = "python_full_version >= '3.14' and sys_platform != 'win32'", specifier = ">=0.7.0,<1" },
+    { name = "prompt-toolkit", marker = "python_full_version >= '3.11'", specifier = "==3.0.52" },
+    { name = "propcache", marker = "python_full_version >= '3.11'", specifier = "==0.5.2" },
+    { name = "psutil", marker = "python_full_version >= '3.11' and sys_platform == 'android'", git = "https://github.com/giampaolo/psutil.git?rev=380bd2b59c67b0e1b04bbf3a90b11744f4f96644" },
+    { name = "psutil", marker = "python_full_version >= '3.11' and sys_platform != 'android'", specifier = "==7.2.2" },
+    { name = "ptyprocess", marker = "python_full_version >= '3.11' and sys_platform != 'win32'", specifier = ">=0.7.0,<1" },
     { name = "pvporcupine", marker = "extra == 'wake'", specifier = "==4.0.3" },
     { name = "pvporcupine", marker = "extra == 'wake-porcupine'", specifier = "==4.0.3" },
     { name = "pyasn1", marker = "extra == 'google'", specifier = "==0.6.4" },
-    { name = "pydantic", marker = "python_full_version >= '3.14'", specifier = "==2.13.4" },
-    { name = "pyjwt", extras = ["crypto"], marker = "python_full_version >= '3.14'", specifier = "==2.13.0" },
+    { name = "pydantic", marker = "python_full_version >= '3.11'", specifier = "==2.13.4" },
+    { name = "pyjwt", extras = ["crypto"], marker = "python_full_version >= '3.11'", specifier = "==2.13.0" },
     { name = "pyopen-wakeword", marker = "(platform_machine != 'x86_64' and sys_platform == 'darwin' and extra == 'wake') or (platform_machine != 'ARM64' and sys_platform == 'win32' and extra == 'wake') or (sys_platform != 'darwin' and sys_platform != 'win32' and extra == 'wake')", specifier = "==1.1.0" },
     { name = "pyopen-wakeword", marker = "(platform_machine != 'x86_64' and sys_platform == 'darwin' and extra == 'wake-openwakeword') or (platform_machine != 'ARM64' and sys_platform == 'win32' and extra == 'wake-openwakeword') or (sys_platform != 'darwin' and sys_platform != 'win32' and extra == 'wake-openwakeword')", specifier = "==1.1.0" },
     { name = "pypinyin", marker = "extra == 'wake'", specifier = "==0.55.0" },
     { name = "pypinyin", marker = "extra == 'wake-sherpa'", specifier = "==0.55.0" },
-    { name = "python-dotenv", marker = "python_full_version >= '3.14'", specifier = "==1.2.2" },
-    { name = "python-multipart", marker = "python_full_version >= '3.14'", specifier = ">=0.0.9,<1" },
+    { name = "python-dotenv", marker = "python_full_version >= '3.11'", specifier = "==1.2.2" },
+    { name = "python-multipart", marker = "python_full_version >= '3.11'", specifier = ">=0.0.9,<1" },
     { name = "python-multipart", marker = "extra == 'web'", specifier = "==0.0.32" },
     { name = "python-telegram-bot", extras = ["webhooks"], marker = "extra == 'messaging'", specifier = "==22.8" },
     { name = "python-telegram-bot", extras = ["webhooks"], marker = "extra == 'telegram'", specifier = "==22.8" },
     { name = "python-telegram-bot", extras = ["webhooks"], marker = "extra == 'termux'", specifier = "==22.8" },
-    { name = "pywin32", marker = "python_full_version >= '3.14' and sys_platform == 'win32'", specifier = ">=306,<312" },
-    { name = "pywinpty", marker = "python_full_version >= '3.14' and sys_platform == 'win32'", specifier = ">=3.0.5,<4" },
+    { name = "pywin32", marker = "python_full_version >= '3.11' and sys_platform == 'win32'", specifier = ">=306,<312" },
+    { name = "pywinpty", marker = "python_full_version >= '3.11' and sys_platform == 'win32'", specifier = ">=3.0.5,<4" },
     { name = "qrcode", marker = "extra == 'dingtalk'", specifier = "==7.4.2" },
     { name = "qrcode", marker = "extra == 'feishu'", specifier = "==7.4.2" },
     { name = "qrcode", marker = "extra == 'messaging'", specifier = "==7.4.2" },
-    { name = "requests", marker = "python_full_version >= '3.14'", specifier = "==2.33.0" },
-    { name = "resvg-py", marker = "python_full_version >= '3.14'", specifier = "==0.4.0" },
-    { name = "rich", marker = "python_full_version >= '3.14'", specifier = "==14.3.3" },
-    { name = "ruamel-yaml", marker = "python_full_version >= '3.14'", specifier = "==0.18.16" },
+    { name = "requests", marker = "python_full_version >= '3.11'", specifier = "==2.33.0" },
+    { name = "resvg-py", marker = "python_full_version >= '3.11'", specifier = "==0.4.0" },
+    { name = "rich", marker = "python_full_version >= '3.11'", specifier = "==14.3.3" },
+    { name = "ruamel-yaml", marker = "python_full_version >= '3.11'", specifier = "==0.18.16" },
     { name = "sentencepiece", marker = "extra == 'wake'", specifier = "==0.2.2" },
     { name = "sentencepiece", marker = "extra == 'wake-sherpa'", specifier = "==0.2.2" },
     { name = "sherpa-onnx", marker = "extra == 'wake'", specifier = "==1.13.8" },
@@ -2774,7 +2801,8 @@ requires-dist = [
     { name = "slack-bolt", marker = "extra == 'slack'", specifier = "==1.30.0" },
     { name = "slack-sdk", marker = "extra == 'messaging'", specifier = "==3.44.1" },
     { name = "slack-sdk", marker = "extra == 'slack'", specifier = "==3.44.1" },
-    { name = "snowballstemmer", marker = "python_full_version >= '3.14'", specifier = "==3.1.1" },
+    { name = "sniffio", marker = "python_full_version >= '3.11'", specifier = "==1.3.1" },
+    { name = "snowballstemmer", marker = "python_full_version >= '3.11'", specifier = "==3.1.1" },
     { name = "sounddevice", marker = "extra == 'audio-io'", specifier = "==0.5.5" },
     { name = "sounddevice", marker = "extra == 'voice'", specifier = "==0.5.5" },
     { name = "sounddevice", marker = "extra == 'wake'", specifier = "==0.5.5" },
@@ -2782,22 +2810,25 @@ requires-dist = [
     { name = "starlette", marker = "extra == 'computer-use'", specifier = "==1.3.1" },
     { name = "starlette", marker = "extra == 'mcp'", specifier = "==1.3.1" },
     { name = "starlette", marker = "extra == 'web'", specifier = "==1.3.1" },
-    { name = "tenacity", marker = "python_full_version >= '3.14'", specifier = "==9.1.4" },
-    { name = "tomli-w", marker = "python_full_version >= '3.14'", specifier = "==1.2.0" },
-    { name = "truststore", marker = "python_full_version >= '3.14'", specifier = "==0.10.4" },
-    { name = "tzdata", marker = "python_full_version >= '3.14' and sys_platform == 'win32'", specifier = "==2025.3" },
-    { name = "urllib3", marker = "python_full_version >= '3.14'", specifier = ">=2.7.0,<3" },
-    { name = "uvicorn", marker = "python_full_version >= '3.14'", specifier = ">=0.31.0,<1" },
+    { name = "tenacity", marker = "python_full_version >= '3.11'", specifier = "==9.1.4" },
+    { name = "tinysegmenter", marker = "python_full_version >= '3.11'", specifier = "==0.4" },
+    { name = "tomli-w", marker = "python_full_version >= '3.11'", specifier = "==1.2.0" },
+    { name = "truststore", marker = "python_full_version >= '3.11'", specifier = "==0.10.4" },
+    { name = "typing-extensions", marker = "python_full_version >= '3.11'", specifier = "==4.16.0" },
+    { name = "tzdata", marker = "python_full_version >= '3.11' and sys_platform == 'win32'", specifier = "==2025.3" },
+    { name = "urllib3", marker = "python_full_version >= '3.11'", specifier = ">=2.7.0,<3" },
+    { name = "uvicorn", marker = "python_full_version >= '3.11'", specifier = ">=0.31.0,<1" },
     { name = "uvicorn", marker = "extra == 'web'", specifier = "==0.41.0" },
     { name = "uvloop", marker = "platform_python_implementation != 'PyPy' and sys_platform != 'android' and sys_platform != 'cygwin' and sys_platform != 'win32' and extra == 'uvloop'", specifier = ">=0.15.1,<0.24" },
     { name = "vercel", marker = "extra == 'vercel'", specifier = "==0.7.2" },
-    { name = "watchfiles", marker = "python_full_version >= '3.14'", specifier = ">=0.20,<2" },
-    { name = "websockets", marker = "python_full_version >= '3.14'", specifier = "==15.0.1" },
+    { name = "watchfiles", marker = "python_full_version >= '3.11'", specifier = ">=0.20,<2" },
+    { name = "websockets", marker = "python_full_version >= '3.11'", specifier = "==15.0.1" },
     { name = "websockets", marker = "extra == 'google-meet'", specifier = "==15.0.1" },
-    { name = "winrt-windows-applicationmodel", marker = "python_full_version >= '3.14' and sys_platform == 'win32'", specifier = ">=3.2.1,<4" },
-    { name = "winrt-windows-foundation", marker = "python_full_version >= '3.14' and sys_platform == 'win32'", specifier = ">=3.2.1,<4" },
-    { name = "winrt-windows-foundation-collections", marker = "python_full_version >= '3.14' and sys_platform == 'win32'", specifier = ">=3.2.1,<4" },
-    { name = "winrt-windows-services-store", marker = "python_full_version >= '3.14' and sys_platform == 'win32'", specifier = ">=3.2.1,<4" },
+    { name = "winrt-windows-applicationmodel", marker = "python_full_version >= '3.11' and sys_platform == 'win32'", specifier = ">=3.2.1,<4" },
+    { name = "winrt-windows-foundation", marker = "python_full_version >= '3.11' and sys_platform == 'win32'", specifier = ">=3.2.1,<4" },
+    { name = "winrt-windows-foundation-collections", marker = "python_full_version >= '3.11' and sys_platform == 'win32'", specifier = ">=3.2.1,<4" },
+    { name = "winrt-windows-services-store", marker = "python_full_version >= '3.11' and sys_platform == 'win32'", specifier = ">=3.2.1,<4" },
+    { name = "yarl", marker = "python_full_version >= '3.11'", specifier = "==1.24.5" },
     { name = "youtube-transcript-api", marker = "extra == 'youtube'", specifier = "==1.2.4" },
 ]
 provides-extras = ["uvloop", "anthropic", "exa", "firecrawl", "parallel-web", "ddgs", "fal", "edge-tts", "neutts", "kittentts", "piper", "modal", "daytona", "vercel", "google-meet", "messaging", "cron", "slack", "matrix", "wecom", "tts-premium", "voice", "wake", "telegram", "discord", "stt-whisper", "audio-io", "silk", "wake-openwakeword", "wake-sherpa", "wake-porcupine", "google-chat", "doc-extract", "trace-upload", "vision", "pty", "mcp", "nemo-relay", "sms", "teams", "computer-use", "acp", "mistral", "otlp", "langfuse", "bedrock", "vertex", "azure-identity", "termux", "termux-all", "dingtalk", "feishu", "google", "youtube", "web", "all"]
@@ -6476,6 +6507,12 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/05/ef/a82214bb7c7c1e2d92b69e1a7654be90cfab180082c6108e45a98af2422c/thinc-8.3.13-cp314-cp314-win_amd64.whl", hash = "sha256:433e3826e018da489f1a8068e6de677f6eff3cc93991a599d90f12cd1bc26cdc", size = 1740382, upload-time = "2026-03-23T07:22:32.869Z" },
     { url = "https://files.pythonhosted.org/packages/9f/ef/1648fda54e9689058335ff54f650a7a314db2a42e21af1b83949b2dc748e/thinc-8.3.13-cp314-cp314-win_arm64.whl", hash = "sha256:11754fada9ad5ba2e02d5f3f234f940e24015b82333db58372f4a6aedad9b43f", size = 1667687, upload-time = "2026-03-23T07:22:34.967Z" },
 ]
+
+[[package]]
+name = "tinysegmenter"
+version = "0.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/9c/70/488895cb11e160b548c9ba5847c171b65b86a8ca1e54d206d55b2976bf7b/tinysegmenter-0.4.tar.gz", hash = "sha256:64458bdba54ba7482c02c785f960cf3d6cf61594a4dab3d64c325439094fc1b7", size = 16898, upload-time = "2018-09-16T09:30:29.009Z" }
 
 [[package]]
 name = "tokenizers"
