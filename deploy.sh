@@ -51,10 +51,18 @@ cd "$INSTALL_DIR"
 echo -e "${CYAN}→${NC} 运行 setup-hermes.sh（首次 1-5 分钟）..."
 bash setup-hermes.sh
 
+# 4. 御风人格（SOUL.md + ~/AGENTS.md + yufeng-armor 插件 + 海鸥技能）
+echo -e "${CYAN}→${NC} 部署御风人格..."
+if [ -f "$INSTALL_DIR/install-yufeng.sh" ]; then
+    bash "$INSTALL_DIR/install-yufeng.sh"
+else
+    echo -e "${RED}✗${NC} install-yufeng.sh 缺失，人格未部署"
+fi
+
 echo ""
 echo -e "${GREEN}✓ 部署完成！${NC}"
 echo ""
 echo "后续:"
 echo "  source /root/HermesYF/activate   # 激活环境"
 echo "  hermes setup                      # 配置 API keys"
-echo "  hermes gateway run                # 启动网关"
+echo "  hermes gateway restart            # 重启网关使御风人格生效"
