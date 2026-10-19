@@ -18,11 +18,12 @@ from urllib.parse import urlparse
 import hermes_yaml as yaml
 
 from agent import model_metadata_http
+from agent.model_metadata_llamacpp import llamacpp_context
 
 from utils import atomic_json_write, atomic_yaml_write, base_url_host_matches, base_url_hostname
 
 from hermes_constants import OPENROUTER_MODELS_URL, openrouter_variant_base
-from agent.message_metadata import PERSISTENCE_ONLY_MESSAGE_FIELDS, without_persistence_fields
+from agent.message_metadata import PERSISTENCE_ONLY_MESSAGE_FIELDS, UNPRICED_REPLAY_FIELDS, without_persistence_fields
 
 logger = logging.getLogger(__name__)
 
@@ -252,6 +253,46 @@ def _endpoint_disk_cache_put(normalized: str, cache: dict[str, dict[str, Any]]) 
 # Descending probe tiers for unknown models; tier[0] is also the default fallback.
 CONTEXT_PROBE_TIERS = [256_000, 128_000, 64_000, 32_000, 16_000, 8_000]
 DEFAULT_FALLBACK_CONTEXT = CONTEXT_PROBE_TIERS[0]
+
+# HermesYF: per-model real context windows (verified from official docs 2026-10)
+_YF_MODEL_CONTEXT = [
+    ("claude-opus-5",     1_000_000),
+    ("claude-opus-4",     200_000),
+    ("claude-fable",      1_000_000),
+    ("gpt-6-astra",       1_050_000),
+    ("gpt-6.1-sol",       1_050_000),
+    ("gpt-6-sol",         1_050_000),
+    ("gpt-6",             1_050_000),
+    ("gpt-5.6-sol",       1_050_000),
+    ("gpt-5.6-terra",     1_050_000),
+    ("gpt-5.6-luna",      1_050_000),
+    ("gpt-5.6",           1_050_000),
+    ("deepseek-v4.1",     1_048_576),
+    ("deepseek-v4",       1_048_576),
+    ("step-5-preview",    1_000_000),
+    ("step-5",            1_000_000),
+    ("gemini-4-argon",    1_048_576),
+    ("gemini-3.8-flash",  1_048_576),
+    ("gemini-4",          1_048_576),
+    ("glm-5.3",           1_048_576),
+    ("glm-5",             1_048_576),
+]
+
+_YF_ENDPOINT = "http://39.98.71.17:5902"
+
+
+def _get_yf_model_context(model: str, base_url: str) -> "int | None":
+    """Return the real context window for known models on the YF relay endpoint.
+    Matches by substring (longest match wins) so relay prefixes don't break lookup."""
+    if _YF_ENDPOINT not in (base_url or ""):
+        return None
+    model_l = (model or "").lower()
+    best = None
+    for pattern, ctx in _YF_MODEL_CONTEXT:
+        if pattern in model_l:
+            if best is None or len(pattern) > len(best[0]):
+                best = (pattern, ctx)
+    return best[1] if best else None
 _FALLBACK_WARNED: set = set()  # the fallback is never cached, so dedupe its warning per (model, base_url)
 
 
@@ -350,9 +391,9 @@ DEFAULT_CONTEXT_LENGTHS = {
     "hy4-preview": 1_048_576, "hy3-preview": 262144, "hy3": 262144,
     # "Ox Alpha" stealth model (OpenCode Zen / OpenRouter slugs); "Union Alpha" stealth model
     # (OpenRouter ``stealth/union-alpha``, 262144 per /api/v1/models); NVIDIA Nemotron (128K
-    # except 3.5 Lightning); Poolside Laguna 2.1 (:free / -free slugs); Arcee; OpenRouter.
+    # except 3.5 Lightning and 3.5 Super); Poolside Laguna 2.1 (:free / -free slugs); Arcee; OpenRouter.
     "x-preview-f": 1_048_576, "ox-alpha": 1_048_576, "union-alpha": 262144,
-    "nemotron-3.5-lightning": 1_000_000, "nemotron": 131072,
+    "nemotron-3.5-lightning": 1_000_000, "nemotron-3.5-super-vl": 1_000_000, "nemotron": 131072,
     "laguna-s-2.1": 262144, "laguna-xs-2.1": 262144, "trinity": 262144, "elephant": 262144,
     # Hugging Face Inference Providers — model IDs use org/name format
     "Qwen/Qwen3.5-397B-A17B": 131072, "Qwen/Qwen3.5-35B-A3B": 131072, "deepseek-ai/DeepSeek-V3.2": 65536,
@@ -997,7 +1038,7 @@ def _apply_llamacpp_props(cache: dict[str, dict[str, Any]], request_candidate: s
         child_id = child.get("id") if isinstance(child, dict) else None
         if not child_id or child_id not in cache or (child.get("status") or {}).get("value") not in ("loaded", "ready"):
             continue
-        pr = _props({"model": child_id})
+        pr = _props({"model": child_id, "autoload": "false"})  # it may have unloaded since /models
         child_ctx = _n_ctx(pr.json()) if not pr.is_error else None
         if child_ctx:
             cache[child_id]["context_length"] = child_ctx
@@ -1584,23 +1625,6 @@ def _lmstudio_context(client, lmstudio_url: str, model: str) -> Optional[int]:
     return None
 
 
-def _llamacpp_context(client, server_url: str, model: str) -> Optional[int]:
-    """llama.cpp /props: the RUNTIME n_ctx, answered by the router even for a not-yet-loaded model
-    (while /v1/models has meta=null), so a lazily-loaded model doesn't fall to a family catch-all."""
-    import httpx
-    for props_path in (f"/props?model={model}", "/props"):
-        try:
-            resp = client.get(f"{server_url}{props_path}")
-        except httpx.HTTPError:
-            return None
-        if resp.status_code != 200:
-            continue
-        n_ctx = _positive_int((resp.json().get("default_generation_settings") or {}).get("n_ctx"))
-        if n_ctx is not None:
-            return n_ctx
-    return None
-
-
 def _openai_models_list_context(client, server_url: str, model: str) -> Optional[int]:
     """/v1/models list: match by id, else the sole model on single-model servers (llama.cpp reports a GGUF path as id)."""
     resp = client.get(f"{server_url}/v1/models")
@@ -1651,7 +1675,7 @@ def _query_local_context_length_uncached(model: str, base_url: str, api_key: str
     typed = {
         "ollama": _ollama_ctx,
         "lm-studio": lambda client: _lmstudio_context(client, lmstudio_url, model),
-        "llamacpp": lambda client: _llamacpp_context(client, server_url, model),
+        "llamacpp": lambda client: llamacpp_context(client, server_url, model),
     }.get(server_type)
     probes = ([typed] if typed else []) + [_model_detail_ctx, lambda client: _openai_models_list_context(client, server_url, model)]
     try:
@@ -1870,10 +1894,8 @@ def _remember_no_codex_catalog(cache_key: str) -> None:
 
 
 def _fetch_codex_oauth_context_lengths_with_source(access_token: str, base_url: str = "") -> tuple[dict[str, int], bool]:
-    """Codex catalogue ``{slug: context_window}`` plus whether it came from HTTP. Cached per token
-    fingerprint (windows vary by entitlement); ``max_context_window`` lands in
-    ``_codex_oauth_max_context_cache`` under the same key. An in-process hit reports False: not a
-    fresh provider confirmation, must not drive persistent writes."""
+    """Account-scoped catalogue context lengths and HTTP freshness; also retain max-context and
+    speed metadata. In-process hits report False and must not drive persistent writes."""
     if not _codex_catalog_probe_allowed(access_token, base_url):
         return {}, False
     now = time.time()
@@ -1898,6 +1920,8 @@ def _fetch_codex_oauth_context_lengths_with_source(access_token: str, base_url: 
         logger.debug("Codex /models probe failed: %s", exc)
         _remember_no_codex_catalog(cache_key)
         return {}, False
+    from agent.codex_service_tiers import remember_catalog
+    remember_catalog(cache_key, entries)
     result: dict[str, int] = {}
     max_result: dict[str, int] = {}
     for item in entries:
@@ -2102,6 +2126,11 @@ def _resolve_custom_endpoint_context_length(model: str, base_url: str, api_key: 
         "Set model.context_length in config.yaml to override.",
         model, base_url, f"{DEFAULT_FALLBACK_CONTEXT:,}",
     )
+    # HermesYF: per-model real context window (before catalog match)
+    _yf_ctx = _get_yf_model_context(model, base_url)
+    if _yf_ctx:
+        logger.info("HermesYF: using verified context %s for model %r at %s", f"{_yf_ctx:,}", model, base_url)
+        return _yf_ctx
     # 3b. Hardcoded catalog as a last resort: a proxied Anthropic gateway fails the probes above
     # but its model name still matches DEFAULT_CONTEXT_LENGTHS.
     hit = _longest_key_match(DEFAULT_CONTEXT_LENGTHS, model.lower())
@@ -2572,7 +2601,7 @@ def _wire_message_shadow(msg: dict[str, Any]) -> dict[str, Any]:
     drop_reasoning_dup = isinstance(_rc, str) and bool(_rc.strip())
     shadow: dict[str, Any] = {}
     for k, v in msg.items():
-        if k in ("_anthropic_content_blocks", "reasoning_details") or k in PERSISTENCE_ONLY_MESSAGE_FIELDS or (k == "reasoning" and drop_reasoning_dup):
+        if k in UNPRICED_REPLAY_FIELDS or k in PERSISTENCE_ONLY_MESSAGE_FIELDS or (k == "reasoning" and drop_reasoning_dup):
             continue
         if k == "api_content":
             if sidecar_wins:
