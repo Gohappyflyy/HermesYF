@@ -30,8 +30,8 @@ if [ -n "$missing" ]; then
     echo -e "${CYAN}→${NC} 安装缺失工具: $missing"
     export DEBIAN_FRONTEND=noninteractive
     apt-get update -qq
-    # libxi6/libxtst6 供可选 cua-driver（computer-use）加载 X11 库，缺了它只是该可选工具不可用
-    apt-get install -y -qq $missing ca-certificates libxi6 libxtst6
+    # 可选 cua-driver（computer-use）需要 X11/GUI 运行库，缺了只是该可选工具不可用
+    apt-get install -y -qq $missing ca-certificates libxi6 libxtst6 libxkbcommon0 libxrender1 libxext6 libxfixes3 libxrandr2 libxcomposite1 libxdamage1
 fi
 
 # 2. 拉取仓库
