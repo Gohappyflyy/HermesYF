@@ -4,6 +4,10 @@
 #       实际发版走 npm（2.4.x），main 分支 HEAD 与 npm publish 同步。
 set -e
 
+# setup-hermes.sh 把 hermes 发布到 ~/.local/bin 但只写进 .bashrc，
+# 非登录 shell 的 PATH 里没有 —— 显式补上，否则 hermes mcp add 找不到命令。
+export PATH="$HOME/.local/bin:$HOME/.bun/bin:$PATH"
+
 INSTALL_DIR="${BLITZ_DIR:-/opt/blitzstrike}"
 REPO="https://github.com/shinthink/blitzstrike.git"
 
