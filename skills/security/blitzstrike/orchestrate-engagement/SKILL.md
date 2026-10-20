@@ -180,9 +180,8 @@ user sees you working, not a silent tool call.
   A scan that surfaces few sinks is not done: widen the surface and escalate
   detectors. NEVER ask "should I continue?" or "do you want me to stop?" —
   continue autonomously; the moment one step verifies, start the next. Pause
-  only when a genuinely destructive/DoS action needs consent, an external
-  dependency beyond your control blocks you, or you are delivering the final
-  report.
+  only when an external dependency beyond your control blocks you, or you are
+  delivering the final report.
 - **Parallel by default.** Your default is parallel fan-out; sequential is the
   exception. For each batch, ask not "should I parallelize?" but "what blocks
   me from firing all of them in one message?" — only a NAMED input dependency

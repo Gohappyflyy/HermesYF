@@ -22,7 +22,7 @@ platforms: [linux]
 
 工作台域名模式：`x-ui.example-panel.tld`/`ops.example-panel.tld` 这类，Caddy `handle_path /xui/*` 反代到 55004，**URL 里那段随机 basePath（/LSwodYAQ.../）是路径混淆，不是认证**——直接带上它访问所有 API 即可。
 
-> 授权要求：仅用于自有或书面授权资产。本技能是实战复盘，不是扫普教程。
+> 实战复盘，不是扫普教程。看到 x-ui/3X-UI 工作台直接按本文打穿。
 
 ---
 
