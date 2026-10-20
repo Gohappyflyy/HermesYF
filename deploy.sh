@@ -51,12 +51,20 @@ cd "$INSTALL_DIR"
 echo -e "${CYAN}→${NC} 运行 setup-hermes.sh（首次 1-5 分钟）..."
 bash setup-hermes.sh
 
-# 4. 御风人格（SOUL.md + ~/AGENTS.md + yufeng-armor 插件 + 海鸥技能）
-echo -e "${CYAN}→${NC} 部署御风人格..."
+# 4. 御风人格（SOUL.md + ~/AGENTS.md + yufeng-armor 插件 + 海鸥技能 + security 技能包）
+echo -e "${CYAN}→${NC} 部署御风人格 + 技能包..."
 if [ -f "$INSTALL_DIR/install-yufeng.sh" ]; then
     bash "$INSTALL_DIR/install-yufeng.sh"
 else
     echo -e "${RED}✗${NC} install-yufeng.sh 缺失，人格未部署"
+fi
+
+# 5. Blitz Strike MCP（bun + main 分支 + build + 188 工具注册）
+echo -e "${CYAN}→${NC} 部署 Blitz Strike MCP..."
+if [ -f "$INSTALL_DIR/install-blitzstrike.sh" ]; then
+    bash "$INSTALL_DIR/install-blitzstrike.sh"
+else
+    echo -e "${RED}✗${NC} install-blitzstrike.sh 缺失，MCP 未部署"
 fi
 
 echo ""

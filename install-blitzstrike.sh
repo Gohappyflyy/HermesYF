@@ -1,0 +1,51 @@
+#!/bin/bash
+# Blitz Strike MCP 一键部署
+# 关键：代码走 main 分支，绝不拉 tag/release —— GitHub Release 长期停在 v1.0.0，
+#       实际发版走 npm（2.4.x），main 分支 HEAD 与 npm publish 同步。
+set -e
+
+INSTALL_DIR="${BLITZ_DIR:-/opt/blitzstrike}"
+REPO="https://github.com/shinthink/blitzstrike.git"
+
+echo "=== Blitz Strike MCP 部署 ==="
+
+# 1. bun（blitzstrike 运行时）
+BUN="$HOME/.bun/bin/bun"
+if ! command -v bun >/dev/null 2>&1 && [ ! -x "$BUN" ]; then
+    echo "→ 安装 bun..."
+    curl -fsSL https://bun.sh/install | bash
+    BUN="$HOME/.bun/bin/bun"
+fi
+if [ ! -x "$BUN" ]; then
+    BUN="$(command -v bun)"
+fi
+[ -x "$BUN" ] || { echo "✗ bun 安装失败，跳过 Blitz Strike"; exit 1; }
+echo "✓ bun: $BUN"
+
+# 2. clone / 更新 main 分支
+if [ -d "$INSTALL_DIR/.git" ]; then
+    echo "→ 更新 blitzstrike（git pull main）..."
+    git -C "$INSTALL_DIR" pull --ff-only origin main 2>/dev/null || \
+        echo "  （拉取失败，沿用现有代码）"
+else
+    echo "→ 克隆 blitzstrike main..."
+    rm -rf "$INSTALL_DIR"
+    git clone --depth 1 "$REPO" "$INSTALL_DIR"
+fi
+
+# 3. 依赖 + build
+cd "$INSTALL_DIR"
+"$BUN" install
+"$BUN" build src/index.ts --outdir dist --target node --format esm --external playwright-core
+
+# 4. 注册 MCP（已存在则跳过）
+if hermes mcp list 2>/dev/null | grep -q "blitzstrike"; then
+    echo "✓ blitzstrike MCP 已注册，跳过"
+else
+    printf 'Y\n' | hermes mcp add blitzstrike --command "$BUN" --args "$INSTALL_DIR/dist/index.js" serve --mcp
+    echo "✓ blitzstrike MCP 已注册（188 工具）"
+fi
+
+echo
+echo "=== Blitz Strike 部署完成 ==="
+echo "重启 gateway 后生效: hermes gateway restart"

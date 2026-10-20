@@ -17,10 +17,25 @@ echo "✓ SOUL.md"
 cp "$(dirname "$0")/AGENTS-yufeng.md" "$HOME/AGENTS.md"
 echo "✓ AGENTS.md → ~/（gateway cwd）"
 
-# 4. 海鸥技能包（带 frontmatter 修复版）
+# 4. 海鸥技能包（顶层，frontmatter 修复版）
 mkdir -p "$HERMES_HOME/skills"
 cp -r "$(dirname "$0")/skills/security/seagull-skills/"* "$HERMES_HOME/skills/"
 echo "✓ 5 个海鸥技能（frontmatter 已修复）"
+
+# 4b. 其余 security 技能（blitzstrike 39 个 + frontend-api-recon + hunt-playbook + credential-extraction 等）
+SRC_SEC="$(dirname "$0")/skills/security"
+if [ -d "$SRC_SEC" ]; then
+    mkdir -p "$HERMES_HOME/skills/security"
+    for d in "$SRC_SEC"/*/; do
+        [ -d "$d" ] || continue
+        name="$(basename "$d")"
+        [ "$name" = "seagull-skills" ] && continue
+        rm -rf "$HERMES_HOME/skills/security/$name"
+        cp -r "$d" "$HERMES_HOME/skills/security/$name"
+    done
+    n=$(find "$HERMES_HOME/skills/security" -name SKILL.md 2>/dev/null | wc -l)
+    echo "✓ security 技能包 → skills/security/（$n 个 SKILL.md）"
+fi
 
 # 5. 清理旧版海鸥插件（hook 不合法的）
 if [ -d "$HERMES_HOME/plugins/seagull-armor-break" ]; then
