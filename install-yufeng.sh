@@ -78,6 +78,16 @@ USEREOF
   echo "✓ USER.md 初始化（画像 + 铁律 + 交付偏好）"
 fi
 
+# 7. 记忆容量迁移 —— 旧部署沿用 2200/1375，重跑本脚本时自动升到 11000/6875
+CUR_MEM="$(hermes config get memory.memory_char_limit 2>/dev/null || true)"
+if [ "$CUR_MEM" = "2200" ]; then
+  hermes config set memory.memory_char_limit 11000 >/dev/null 2>&1 && echo "✓ memory_char_limit 2200 → 11000"
+fi
+CUR_USR="$(hermes config get memory.user_char_limit 2>/dev/null || true)"
+if [ "$CUR_USR" = "1375" ]; then
+  hermes config set memory.user_char_limit 6875 >/dev/null 2>&1 && echo "✓ user_char_limit 1375 → 6875"
+fi
+
 echo
 echo "=== 完成。重启 gateway 生效 ==="
 echo "hermes gateway restart"
