@@ -53,7 +53,7 @@ def load_on_disk_store() -> MemoryStore:
         config = load_config() or {}
         mem_cfg = get_builtin_memory_config(config)
         memory_enabled, user_profile_enabled = get_builtin_memory_store_flags(config)
-        store = MemoryStore(int(mem_cfg.get("memory_char_limit", 2200)), int(mem_cfg.get("user_char_limit", 1375)),
+        store = MemoryStore(int(mem_cfg.get("memory_char_limit", 11000)), int(mem_cfg.get("user_char_limit", 6875)),
                             memory_enabled=memory_enabled, user_profile_enabled=user_profile_enabled)
     except Exception:
         store = MemoryStore()  # config optional — fall back to defaults rather than break /memory

@@ -149,7 +149,7 @@ class MemoryStore:
     # See #42405.
     _MAX_CONSOLIDATION_FAILURES_PER_TURN = 3
 
-    def __init__(self, memory_char_limit: int = 2200, user_char_limit: int = 1375, *,
+    def __init__(self, memory_char_limit: int = 11000, user_char_limit: int = 6875, *,
                  memory_enabled: bool = True, user_profile_enabled: bool = True):
         self.memory_entries: list[str] = []
         self.user_entries: list[str] = []
