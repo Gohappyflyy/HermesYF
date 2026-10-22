@@ -32,8 +32,37 @@ if [ -d "$SRC_ROOT" ]; then
         mkdir -p "$HERMES_HOME/skills/$d"
         cp -r "$d/." "$HERMES_HOME/skills/$d/"
       done )
+    # 清历史残留：这些自建技能曾部署在 skills/ 顶层，现已归位到 security/ 或 media/
+    for n in whmcs-assessment xboard-airport-pentest whmcs-assessment \
+             aspnet-webforms-panel-pentest blitzstrike-workflow egress-ip-rotation \
+             geetest-text-click-bypass tvbox-spider-dev; do
+        [ -d "$HERMES_HOME/skills/$n" ] && rm -rf "$HERMES_HOME/skills/$n"
+    done
     n=$(find "$HERMES_HOME/skills" -name SKILL.md 2>/dev/null | wc -l)
     echo "✓ 全量技能同步 → skills/（$n 个 SKILL.md）"
+fi
+
+# 4c. 本机实战技能（skills-local/）—— 含真实目标信息的技能只留本机，git 已忽略
+#     仓库只放通用能力，这些技能永远不会进远端
+SRC_LOCAL="$(dirname "$0")/skills-local"
+if [ -d "$SRC_LOCAL" ]; then
+    ( cd "$SRC_LOCAL" && find . -name SKILL.md -print | while IFS= read -r f; do
+        d="$(dirname "$f")"
+        mkdir -p "$HERMES_HOME/skills/$d"
+        cp -r "$d/." "$HERMES_HOME/skills/$d/"
+      done )
+    m=$(find "$SRC_LOCAL" -name SKILL.md 2>/dev/null | wc -l)
+    echo "✓ 本机实战技能 skills-local/（$m 个，仅本机）"
+fi
+
+# 4b. 运维脚本 → /root/pentest/（kickoff 开工自检是 AGENTS.md 硬规则的依赖，缺了就失效）
+SRC_TOOLS="$(dirname "$0")/deploy-tools"
+if [ -d "$SRC_TOOLS" ]; then
+    mkdir -p /root/pentest
+    cp -f "$SRC_TOOLS"/*.py /root/pentest/ 2>/dev/null || true
+    chmod +x /root/pentest/*.py 2>/dev/null || true
+    t=$(ls -1 /root/pentest/*.py 2>/dev/null | wc -l)
+    echo "✓ 运维脚本 → /root/pentest/（$t 个）"
 fi
 
 # 5. 清理旧版海鸥插件（hook 不合法的）

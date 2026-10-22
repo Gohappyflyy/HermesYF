@@ -62,7 +62,7 @@ hermes gateway restart
 自检：
 
 ```bash
-find ~/.hermes/skills -name SKILL.md | wc -l        # 期望 351
+find ~/.hermes/skills -name SKILL.md | wc -l        # 期望 351（朋友机器，不含本机实战技能）
 python3 /root/pentest/kickoff.py example.com     # 应无命中（新目标）
 ```
 
