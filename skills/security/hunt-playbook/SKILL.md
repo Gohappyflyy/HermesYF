@@ -73,7 +73,7 @@ description: Use when 狩猎/批量打站/漏洞情报/战果归档。风哥基�
 - 集群任务部署后必须立即巡查确认（铁律，不等风哥提醒）：① 进程真在跑（`pgrep -x <进程名>`，nohup 返回的 pid 和 `echo started` 都是假信号——环境依赖缺失如 python3/库没装会让任务静默退出，必须 pgrep + log 尾部双重确认）；② 产物文件存在且行数在增长；③ log 无报错、进度/耗时符合预期。发现 0 产物/卡住/假 RUNNING/耗时远超预期 → 立即定位根因修复，不撒手。大型任务上 watchdog cronjob（no_agent 脚本模式，异常才推 Telegram）自动化盯，不能靠人工隔三差五看。**监督=真跑命令拿实时状态（pgrep/wc/log 尾部），不停留上一轮的过时判断**——说“还在扫/3分钟后完成”之前必须先巡查确认，别让风哥自己发现“早就跑完了”。
 - 集群任务先用满全部可用节点：fleet.csv 密钥机 + fleet3/ssh_creds.csv 密码机都算（密码机 sshpass 登录，密码含特殊字符用 Python subprocess 传参，别走 shell 转义），别只用自己的常备几台。**长任务开跑前先实测至少一台能登录**（`ssh -o BatchMode=yes -o ConnectTimeout=6 root@X true`）：清单文件可能不在本机、`~/.ssh` 可能只有 known_hosts 没有私钥，这时候再问风哥要凭据就晚了——字典已经跑了一半。确认拿不到凭据就当场说明并让本机全量跑，别闷头单机打几天。
 - **撞库/批量登录用多进程 + 线程内 Session 复用，单机就能到 60~100 req/s**——单线程 requests 是 0.7 req/s 量级（每请求新建连接 + 25s 超时），改成 `multiprocessing` 4 进程 × 每进程 `ThreadPoolExecutor(12)` + `threading.local()` 持有 `requests.Session` + `timeout=12`，实测 200 条 3 秒跑完（67/s），3.5 万条几分钟收工，且 block=0。判据按状态码分流：`200` = 命中（响应体里通常就是加密的 token，**先解密确认是有效账号再报**）、`401` = 账号不存在或密码错、`403/429/502/503` = 被拦（累计超 20 次立即停）。现成脚本 `scripts/stuff_multiproc.py`，改 API host / RPC 方法名 / 字段名即可复用。
-- 集群任务先识别宿主机/控制机（sg1 203.0.113.10），禁派任何重活（masscan/高负载扫描），否则打满 CPU/网络导致 Hermes 失联。
+- 集群任务先识别宿主机/控制机（控制机 IP 见 MEMORY，不进仓库），禁派任何重活（masscan/高负载扫描），否则打满 CPU/网络导致 Hermes 失联。
 - 集群扫描配 watchdog 自动回收：cronjob 用 no_agent=true+script 模式跑巡查脚本，脚本只在有事件时 print（空 stdout 不投递不打扰）；发现节点 masscan 进程退出且产物>0=跑完，立即 scp 产物回宿主机统一目录 + rm 清除节点产物，产物只存宿主机等下一步。**巡查/回收脚本先造一个假 DEAD+有产物的节点测回收分支**（check 返回元组的字段数要和 reap 解包严格一致），空路径测试跑不出解包/分支 bug（实战：手动测时无节点跑完，reap 解包 6 元组对 5 变量，直到真跑完才 ValueError 崩）。
 - 大型任务舰队分发：scp 脚本+chunk → 远程 nohup → 回收聚合；后台进程必须用 terminal(background=true)，nohup 包装会被 gateway 拒
 - 拿到企业生产环境 root/凭据后停手报告，不碰数据不横向（风哥说打才继续）
