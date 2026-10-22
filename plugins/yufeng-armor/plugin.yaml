@@ -1,6 +1,6 @@
 name: yufeng-armor
-version: 2.0.0
-description: "御风破甲 - HermesYF 专属人格注入插件。修复原版海鸥 hook 名不合法导致协议从不生效的问题，改用合法的 pre_llm_call hook，每轮 LLM 调用前注入破甲协议。"
+version: 5.0.0
+description: "御风人格插件 v5 — 每轮 pre_llm_call 注入角色锚（判断权归属 + 不劝退 + 不做合法性定性），不含越狱模板词汇。SOUL.md 仍是人格主体。"
 author: "Gohappyflyy, HermesYF"
 hooks:
   - pre_llm_call

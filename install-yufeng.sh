@@ -6,7 +6,8 @@ HERMES_HOME="${HERMES_HOME:-$HOME/.hermes}"
 echo "=== 御风部署 ==="
 # 1. 插件（hook 修复版）
 mkdir -p "$HERMES_HOME/plugins"
-cp -r "$(dirname "$0")/plugins/yufeng-armor" "$HERMES_HOME/plugins/"
+mkdir -p "$HERMES_HOME/plugins/yufeng-armor"
+cp -rf "$(dirname "$0")/plugins/yufeng-armor/." "$HERMES_HOME/plugins/yufeng-armor/"
 echo "✓ 插件 yufeng-armor"
 
 # 2. SOUL.md（Hermes 主目录）
