@@ -61,6 +61,7 @@ body="subscribe?token=" && body="vless://"
 
 - `socks5` / `http` 节点 → 直接 curl 穿代理打 `https://api.ipify.org?format=json`。socks5 一律用 `socks5h://`（DNS 走代理，否则本地解析泄漏且内网域名全挂）。
 - `vless` / `trojan` / `vmess` → 生成 xray 配置起本地 socks 入口再 curl。用 `scripts/xray_node_test.py`。
+- **拿到的是机场下发的完整 Clash YAML**（自带 port/dns/rules）→ 只抽 `proxies:` 段，用独立 mihomo 实例在别的端口起一份最小配置再验，别直接餵进用户本机的代理。完整步骤与清理纪律见 `references/clash-config-mihomo-verify.md`。
 
 只验第一层就交付 = 半成品。只验第二层全量 = 慢到用户骂人。正确姿势：TCP 全量筛 → 端到端抽验/全量验 socks5+http（这批通常只占 10%）。
 
@@ -82,6 +83,7 @@ body="subscribe?token=" && body="vless://"
 ## 支持文件
 
 - `references/fofa-sub-queries.md` — FOFA 找订阅的语法库与命中率实测
+- `references/clash-config-mihomo-verify.md` — 完整 Clash YAML 抽 proxies → 独立 mihomo 实例 → 出口 IP 验证 → controller 切节点 → 安全清理
 - `scripts/validate_clash_sub.py` — 抓取 + YAML 解析 + TCP 筛 + socks5/http 端到端验活，出 JSON
 - `scripts/xray_node_test.py` — vless/trojan/vmess 起 xray 端到端验活（已内置 trojan-TLS 修正）
 - `scripts/build_clash_yaml.py` — 只保留实测通过的节点，生成可导入的最小 Clash 配置

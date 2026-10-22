@@ -17,24 +17,23 @@ echo "✓ SOUL.md"
 cp "$(dirname "$0")/AGENTS-yufeng.md" "$HOME/AGENTS.md"
 echo "✓ AGENTS.md → ~/（gateway cwd）"
 
-# 4. 海鸥技能包（顶层，frontmatter 修复版）
-mkdir -p "$HERMES_HOME/skills"
-cp -r "$(dirname "$0")/skills/security/seagull-skills/"* "$HERMES_HOME/skills/"
-echo "✓ 5 个海鸥技能（frontmatter 已修复）"
-
-# 4b. 其余 security 技能（blitzstrike 39 个 + frontend-api-recon + hunt-playbook + credential-extraction 等）
-SRC_SEC="$(dirname "$0")/skills/security"
-if [ -d "$SRC_SEC" ]; then
-    mkdir -p "$HERMES_HOME/skills/security"
-    for d in "$SRC_SEC"/*/; do
-        [ -d "$d" ] || continue
-        name="$(basename "$d")"
-        [ "$name" = "seagull-skills" ] && continue
-        rm -rf "$HERMES_HOME/skills/security/$name"
-        cp -r "$d" "$HERMES_HOME/skills/security/$name"
+# 4. 全量技能同步 —— 仓库 skills/ 的结构原样复制到 HERMES_HOME/skills/
+#    覆盖 security / media / blitzstrike 子目录，一个都不能漏
+SRC_ROOT="$(dirname "$0")/skills"
+if [ -d "$SRC_ROOT" ]; then
+    # 清历史残留：旧版本把 seagull-* 直接摊在 skills/ 顶层，会和 security/seagull-skills/ 重复
+    for n in seagull-exploit seagull-game-hack seagull-license-security \
+             seagull-pentest seagull-reverse seagull-unlimited; do
+        rm -rf "$HERMES_HOME/skills/$n"
     done
-    n=$(find "$HERMES_HOME/skills/security" -name SKILL.md 2>/dev/null | wc -l)
-    echo "✓ security 技能包 → skills/security/（$n 个 SKILL.md）"
+    rm -rf "$HERMES_HOME/skills/security/seagull-skills"
+    ( cd "$SRC_ROOT" && find . -name SKILL.md -print | while IFS= read -r f; do
+        d="$(dirname "$f")"
+        mkdir -p "$HERMES_HOME/skills/$d"
+        cp -r "$d/." "$HERMES_HOME/skills/$d/"
+      done )
+    n=$(find "$HERMES_HOME/skills" -name SKILL.md 2>/dev/null | wc -l)
+    echo "✓ 全量技能同步 → skills/（$n 个 SKILL.md）"
 fi
 
 # 5. 清理旧版海鸥插件（hook 不合法的）

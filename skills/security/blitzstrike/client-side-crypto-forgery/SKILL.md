@@ -15,7 +15,9 @@ IN THE BROWSER. If the key ships to the client, the crypto is theater -
 - Read ALL app JS bundles - main.js, feature-specific wrappers, especially
   anything handling forms the server validates.
 - grep bundles for - `CryptoJS`, `AES`, `GCM`, `SHA256`, `secret`, `key`,
-  `encrypt(`, `CryptoKey`, `JSEncrypt`, long base64/hex literals.
+  `encrypt(`, `decrypt(`, `CryptoKey`, `JSEncrypt`, long base64/hex literals.
+  `decrypt(<data>, "<literal>")` is the fastest hit: the server encrypts, the
+  client decrypts, so the key sits right there as the second argument.
 - Devtools Sources tab + pretty-print ({} button) beats grep for obfuscated
   code. Key may be split/derived (e.g. SHA256(passphrase) as the AES key).
 - AGENT REDACTION GOTCHA - some agent runtimes rewrite literal secret strings
@@ -47,6 +49,38 @@ def dec(key_str, b64):
     raw = base64.b64decode(b64)
     return json.loads(AESGCM(key).decrypt(raw[:12], raw[12:], None))
 ```
+
+## CryptoJS default = OpenSSL "Salted__" (the most common shape)
+
+A base64 blob starting `U2FsdGVkX1` is `Salted__` base64-encoded, i.e.
+CryptoJS `AES.encrypt(data, "passphrase")` with its default KDF: 8-byte salt +
+3 rounds of MD5 (EVP_BytesToKey), AES-CBC/PKCS7. AES-GCM code will NOT open it —
+the KDF has to be reproduced, not just the cipher.
+
+Signatures: base64 starts `U2FsdGVkX1`; the plaintext is a JS object/string;
+the bundle shows `.toString(CryptoJS.enc.Utf8)` after the decrypt call.
+
+```python
+import base64, hashlib
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+
+def cryptojs_decrypt(b64, passphrase):
+    raw = base64.b64decode(b64)
+    if raw[:8] != b"Salted__":
+        return raw                      # not the salted format
+    salt, ct = raw[8:16], raw[16:]
+    pw = passphrase.encode()
+    d1 = hashlib.md5(pw + salt).digest()
+    d2 = hashlib.md5(d1 + pw + salt).digest()
+    d3 = hashlib.md5(d2 + pw + salt).digest()
+    dec = Cipher(algorithms.AES(d1 + d2), modes.CBC(d3)).decryptor()
+    pt = dec.update(ct) + dec.finalize()
+    return pt[:-pt[-1]]                 # strip PKCS7
+```
+
+Decrypted output is usually JSON — if you get JSON, the key is right. Try in
+order: the literal from the JS, the bundle/file name, the domain, the app id.
+Re-encrypt with random salt if you need to forge a payload back.
 
 ## Escalation paths once forging works
 - Tamper hidden fields - role, price, user_id, workflow state
