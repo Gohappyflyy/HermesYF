@@ -81,7 +81,7 @@ python3 -m unittest discover -s yf_tests -v
 
 验证：插件语法 AST 通过；5 技能 frontmatter 齐；称呼 0 残留"大佬"；AGENTS.md 在 cwd 加载实测 loaded。
 
-## 部署记录（203.0.113.10, Debian 13）
+## 部署记录（Debian 13 测试机）
 
 - 仓库 clone 至 /opt/HermesYF（commit 199ef8c4c3）
 - yf_tests: 131 passed / 1 failed / 1 skipped —— 失败项为 test_tls_trusted_ca_sni_and_hostname_verification，
