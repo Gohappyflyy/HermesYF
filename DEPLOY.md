@@ -3,8 +3,14 @@
 ## 首次部署（干净机器）
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Gohappyflyy/HermesYF/main/deploy.sh | bash
+export HERMESYF_TOKEN=ghp_xxx      # 私有仓库，必须是能读 HermesYF 的 PAT
+curl -fsSL -H "Authorization: token $HERMESYF_TOKEN" \
+  https://raw.githubusercontent.com/Gohappyflyy/HermesYF/main/deploy.sh | bash
 ```
+
+没有 token 会 404（仓库是私有的）。deploy.sh 自己用 `$HERMESYF_TOKEN` clone，并把凭据写进 `~/.git-credentials`（0600），token 不会留在 `.git/config` 里，后续 `update.sh` 直接可用。
+
+拉完记得把 token 从 shell 清掉：`unset HERMESYF_TOKEN; history -d $(history 1 | awk '{print $1}')`。
 
 装完后：
 
