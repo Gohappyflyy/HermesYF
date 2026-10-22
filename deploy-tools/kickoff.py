@@ -6,8 +6,8 @@
 收到新目标时先跑这个，把「该用什么技能」和「以前打没打过」一次性摆出来。
 
 用法：
-    python3 /root/pentest/kickoff.py [target-redacted].net
-    python3 /root/pentest/kickoff.py [target-redacted].net 饿饭 饿饭云     # 带别名
+    python3 /root/pentest/kickoff.py example.com
+    python3 /root/pentest/kickoff.py example.com 饿饭 饿饭云     # 带别名
 
 输出三段：
   1. 技能匹配      —— 按关键词命中技能库里的 name / description / 正文

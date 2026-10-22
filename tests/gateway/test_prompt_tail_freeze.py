@@ -130,7 +130,7 @@ class TestEphemeralChangeKeyParity:
         ("user_name_cleared", dict(user_name=None)),
         ("user_id", dict(user_name=None, user_id="1234")),
         ("shared_multi_user", dict(shared_multi_user=True)),
-        ("guild_id", dict(guild_id="[redacted-token]")),
+        ("guild_id", dict(guild_id="987654321")),
         ("parent_chat_id", dict(parent_chat_id="999000111")),
         ("chat_id", dict(chat_id="999999999", parent_chat_id="999999999")),
         ("platform", dict(platform=Platform.TELEGRAM)),

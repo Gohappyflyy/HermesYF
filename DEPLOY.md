@@ -62,8 +62,8 @@ hermes gateway restart
 自检：
 
 ```bash
-find ~/.hermes/skills -name SKILL.md | wc -l        # 期望 357
-python3 /root/pentest/kickoff.py [target-redacted].net 饿饭     # 应命中 [target-redacted]-whmcs-assessment
+find ~/.hermes/skills -name SKILL.md | wc -l        # 期望 351
+python3 /root/pentest/kickoff.py example.com     # 应无命中（新目标）
 ```
 
 ## 常见问题

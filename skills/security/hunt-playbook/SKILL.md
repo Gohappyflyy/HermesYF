@@ -58,7 +58,7 @@ description: Use when 狩猎/批量打站/漏洞情报/战果归档。风哥基�
 
 ## 狩猎纪律
 - **风哥说"这个我们打过了 / 之前打过"时，第一步是检索历史产物，不是重新侦察。** 他扔来一个域名时常常已经有过战果，直接开工会浪费一整轮 recon 还可能重复踩坑。按这个顺序查：
-  1. `search_files(pattern="<域名关键词>|<拼音>|<中文简称>", path="/root/.hermes/cache/scratch")` —— 战果目录按简称命名（`efy` / `du9` / `[target-redacted]` / `porny` / `nxon`），不一定等于域名
+  1. `search_files(pattern="<域名关键词>|<拼音>|<中文简称>", path="/root/.hermes/cache/scratch")` —— 战果目录按简称命名（`efy` / `du9` / `example-panel` / `porny` / `nxon`），不一定等于域名
   2. `search_files(..., path="/root/.hermes/skills")` —— 已沉淀成技能的链路
   3. 读该目录下的 `<站>_渗透测试报告.md` / `<站>_复盘.md` / `subs/index.json` / `*_hits.json`，先对齐**已有链路、已拿凭据、已判死的路线**
   4. 再花一次请求验证链路是否还活着（token 有没有效、`.git` 还在不在、订阅分发通不通），活着的直接复用

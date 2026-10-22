@@ -15,7 +15,6 @@
 |---|---|
 | WHMCS / 账单面板 / clientarea.php | `whmcs-assessment` |
 | 机场 / Xboard / V2board / v2board 桥接 | `xboard-airport-pentest` |
-| [target-redacted].net / 饿饭云 | `[target-redacted]-whmcs-assessment` |
 | 撞库 / 账号本 / 密码喷洒 | `credential-extraction` |
 | 出口被封 / 429 / 换 IP | `egress-ip-rotation` |
 | 拉 Clash/vless 订阅 / 订阅站 | `proxy-subscription-harvesting` |
@@ -68,7 +67,7 @@ python3 /root/pentest/kickoff.py <目标域名> [别名...]
 2. MEMORY 战果索引 —— 一句话结论 + 指向技能
 3. 交付脚本放 `/root/apks/` 或 scratch 对应目录
 
-第 1 条里**必须写真实域名**（如 `live.[target-redacted].net`、`[target-redacted].me`），否则 kickoff 匹配不到。
+第 1 条里**必须写真实域名**（如 `live.example-airport.net`、`example-panel.example`），否则 kickoff 匹配不到。
 漏了第 1 或第 2 条，下次就是你提醒我才想起来。风哥的原话：
 **“为什么你失忆了？？要我一次次提醒你才去翻找记忆！”**
 
