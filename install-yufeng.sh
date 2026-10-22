@@ -64,6 +64,12 @@ if [ -d "$SRC_TOOLS" ]; then
     t=$(ls -1 /root/pentest/*.py 2>/dev/null | wc -l)
     echo "✓ 运维脚本 → /root/pentest/（$t 个）"
 fi
+# 部署验收脚本也放一份到 /root/pentest/，日常手工复验不用回仓库找
+if [ -f "$(dirname "$0")/scripts/deploy_check.sh" ]; then
+    cp -f "$(dirname "$0")/scripts/deploy_check.sh" /root/pentest/
+    chmod +x /root/pentest/deploy_check.sh
+    echo "✓ 验收脚本 → /root/pentest/deploy_check.sh"
+fi
 
 # 5. 清理旧版海鸥插件（hook 不合法的）
 if [ -d "$HERMES_HOME/plugins/seagull-armor-break" ]; then
