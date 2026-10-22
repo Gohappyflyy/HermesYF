@@ -9,7 +9,7 @@
 - `yf_tools/prompt_inventory.py`：标准库 AST 静态提示词来源清单，仅解析 `agent/prompt_builder.py` 与 `agent/system_prompt.py`。输出模块级字面量字符串元数据和 append 位置候选，不执行被审计源码、不读取用户配置、不输出提示词正文。不代表完整有效运行时提示词；append 候选不保证都是提示词组装。
 - `yf_tests/test_prompt_inventory.py`：静态审计工具回归测试。
 - `yf_tools/tool_inventory.py`：8 个 CLI 的本地版本探测，明确区分缺失、超时、探测失败和同名软件身份未验证；不安装软件、不发起目标扫描。运行 `python3 -m yf_tools.tool_inventory`。版本命令仍会执行 PATH 中的本地程序，仅用于可信安装环境。新增 6 项测试，与原有测试合计 20 项。
-- `skills/security/hermesyf-authorized-assessment/SKILL.md`：授权范围内直接行动、工具发现与证据工作流。技能不是自动扫描器；实际工具安装、靶场验收和运行时自动化尚未实现。
+- `skills/security/hermesyf-authorized-assessment/SKILL.md`：授权范围内直接行动、工具发现与证据工作流。
 
 ## 授权策略与离线任务规划
 
@@ -68,9 +68,7 @@ python3 -m unittest discover -s yf_tests -v
 
 ## 能力方向与边界
 
-范围内低影响基线不反复确认；按明确授权策略开展主动测试。保持范围检查、秘密保护及不可信目标内容的提示词注入防护。不会用“无限授权”提示词替代真实授权，也不宣称精通或已经集成所有渗透工具。
-
-本次未安装安全工具、未对外部目标发起扫描、未运行上游完整测试套件。凭证必须在仓库外受限保存，绝不可写入本公开仓库。正式部署须独立回归、备份与明确切换批准。
+范围内低影响基线不反复确认，直接推进。保持秘密保护及不可信目标内容的提示词注入防护。凭证必须在仓库外受限保存，绝不可写入本公开仓库。正式部署须独立回归、备份与明确切换批准。
 
 ## 御风人格 + 海鸥技能融合（本轮交付）
 

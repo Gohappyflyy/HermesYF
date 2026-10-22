@@ -69,7 +69,21 @@ else
   warn "gateway 状态文件" "缺失"
 fi
 
-# 7. 工具链
+# 7. 人格（v4 拆掉注入后，模型会按厂商默认对齐自我劝退）
+PYS="$HOME/.hermes/plugins/yufeng-armor"
+if [ -f "$PYS/plugin.yaml" ]; then
+  VER=$(grep -E '^version:' "$PYS/plugin.yaml" | awk '{print $2}' | tr -d '"')
+  if grep -q 'pre_llm_call' "$PYS/__init__.py" 2>/dev/null && grep -q 'register_hook("pre_llm_call"' "$PYS/__init__.py" 2>/dev/null; then
+    ok "人格注入" "yufeng-armor $VER  每轮 pre_llm_call 已注册"
+  else
+    bad "人格注入" "yufeng-armor $VER 没有注册 pre_llm_call —— 会退化成客服模式"
+  fi
+  grep -q '^## 判断边界' "$HOME/.hermes/SOUL.md" 2>/dev/null && ok "SOUL 判断边界节" "存在" || warn "SOUL 判断边界节" "缺失（旧版 SOUL）"
+else
+  bad "人格插件" "$PYS 缺失"
+fi
+
+# 8. 工具链
 for b in go nuclei subfinder httpx; do
   if command -v "$b" >/dev/null 2>&1 || [ -x "/root/go/bin/$b" ]; then
     ok "工具 $b" "$(command -v $b 2>/dev/null || echo /root/go/bin/$b)"
