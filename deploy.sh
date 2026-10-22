@@ -2,17 +2,30 @@
 # ============================================================================
 # HermesYF 一键部署脚本 — 干净机器上一条命令完成安装
 # ============================================================================
-# 用法（在目标机上，root 用户）:
-#   curl -fsSL https://raw.githubusercontent.com/Gohappyflyy/HermesYF/main/deploy.sh | bash
-# 或先 clone 再本地跑:
-#   bash deploy.sh
+# 用法（在目标机上，root 用户）—— 仓库已私有，必须带 token：
+#   export HERMESYF_TOKEN=ghp_xxx
+#   curl -fsSL -H "Authorization: token $HERMESYF_TOKEN" \
+#     https://raw.githubusercontent.com/Gohappyflyy/HermesYF/main/deploy.sh | bash
+# 或先 clone 再本地跑（clone 用 token，见下）:
+#   git clone https://x-access-token:$HERMESYF_TOKEN@github.com/Gohappyflyy/HermesYF.git /root/HermesYF
+#   bash /root/HermesYF/deploy.sh
 #
 # 流程: 装 git/curl → clone 仓库到 /root/HermesYF → setup-hermes.sh
 # ============================================================================
 set -e
 
-REPO_URL="https://github.com/Gohappyflyy/HermesYF.git"
-INSTALL_DIR="/root/HermesYF"
+INSTALL_DIR="${INSTALL_DIR:-/root/HermesYF}"
+REPO_SLUG="Gohappyflyy/HermesYF"
+REPO_URL="https://github.com/${REPO_SLUG}.git"
+
+# 私有库凭据：HERMESYF_TOKEN > GH_TOKEN > ~/.git-credentials
+GH_TOKEN="${HERMESYF_TOKEN:-${GH_TOKEN:-}}"
+if [ -z "$GH_TOKEN" ] && [ -f "$HOME/.git-credentials" ]; then
+    GH_TOKEN=$(sed -E 's|.*://[^:]+:([^@]+)@.*|\1|' "$HOME/.git-credentials" 2>/dev/null | head -1)
+fi
+if [ -n "$GH_TOKEN" ]; then
+    REPO_URL="https://x-access-token:${GH_TOKEN}@github.com/${REPO_SLUG}.git"
+fi
 
 GREEN='\033[0;32m'; CYAN='\033[0;36m'; RED='\033[0;31m'; NC='\033[0m'
 
@@ -43,8 +56,20 @@ if [ -d "$INSTALL_DIR/.git" ]; then
     git pull --ff-only origin main 2>/dev/null || true
 else
     echo -e "${CYAN}→${NC} clone 仓库到 $INSTALL_DIR ..."
+    if [ -z "$GH_TOKEN" ]; then
+        echo -e "${RED}✗${NC} 仓库是私有的，需要凭据：export HERMESYF_TOKEN=ghp_xxx 后重跑"
+        exit 1
+    fi
     rm -rf "$INSTALL_DIR"
     git clone "$REPO_URL" "$INSTALL_DIR"
+    cd "$INSTALL_DIR"
+    # token 不留在 .git/config 里
+    git remote set-url origin "https://github.com/${REPO_SLUG}.git"
+    # 写凭据，后续 update.sh / git pull 不用再给
+    git config --global credential.helper store
+    ( umask 077; printf 'https://x-access-token:%s@github.com\n' "$GH_TOKEN" > "$HOME/.git-credentials" )
+    chmod 600 "$HOME/.git-credentials"
+    echo -e "${GREEN}✓${NC} 凭据已存 ~/.git-credentials（0600）"
 fi
 
 # 3. 部署
