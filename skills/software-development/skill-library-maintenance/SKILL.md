@@ -99,7 +99,7 @@ python3 scripts/skill_audit.py <目录> --json out.json      # 机器可读
 
 ## 技能里必须写真实域名
 
-技能正文没写具体域名（只写「机场面板」「WHMCS 站」），开工自检就匹配不到，等于白写。每条「已评估目标」都要带 `live.[target-redacted].net`、`[target-redacted].me` 这种可直接 grep 的字符串。
+技能正文没写具体域名（只写「机场面板」「WHMCS 站」），开工自检就匹配不到，等于白写。每条「已评估目标」都要带 `live.example-airport.net`、`example-panel.example` 这种可直接 grep 的字符串。
 
 ## 部署验证：用隔离 HOME 模拟全新安装
 

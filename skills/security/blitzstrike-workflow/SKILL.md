@@ -45,7 +45,7 @@ metadata:
 | 字典生成 | — | cewl（从目标站点生成定制字典） |
 | TLS | `tls-transport-security` 技能 | testssl |
 
-## 实战教训（[target-redacted] 那轮踩的）
+## 实战教训（example-aspnet 那轮踩的）
 
 1. **`oob_start` 在云端默认起本地监听**（如 `http://172.31.15.115:43783`），目标回连不到。公网目标的 OOB 要自己用公网机器监听，或改用 `webhook.site`（`POST /token` 拿 uuid → `GET /token/<uuid>/requests` 读记录）。
 2. **`param_surface` / `active_scan` 无登录态时只能看到登录表单**。带登录态的目标要先手工登录拿 cookie，再把 cookie 喂给工具（或直接写脚本）。
