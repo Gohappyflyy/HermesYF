@@ -32,11 +32,10 @@ if [ -d "$SRC_ROOT" ]; then
         mkdir -p "$HERMES_HOME/skills/$d"
         cp -r "$d/." "$HERMES_HOME/skills/$d/"
       done )
-    # 清历史残留：这些自建技能曾部署在 skills/ 顶层，现已归位到 security/ 或 media/
-    for n in whmcs-assessment xboard-airport-pentest whmcs-assessment \
-             aspnet-webforms-panel-pentest blitzstrike-workflow egress-ip-rotation \
-             geetest-text-click-bypass tvbox-spider-dev; do
-        [ -d "$HERMES_HOME/skills/$n" ] && rm -rf "$HERMES_HOME/skills/$n"
+    # 清历史残留：旧版本曾把技能直接摊在 skills/ 顶层，现在全部归入分类目录
+    # 顶层不该有 SKILL.md，有就是历史残留，直接清掉（不动分类目录里的技能）
+    for f in "$HERMES_HOME"/skills/*/SKILL.md; do
+        [ -f "$f" ] && rm -rf "$(dirname "$f")"
     done
     n=$(find "$HERMES_HOME/skills" -name SKILL.md 2>/dev/null | wc -l)
     echo "✓ 全量技能同步 → skills/（$n 个 SKILL.md）"
