@@ -95,9 +95,21 @@ apt-get install -y -qq git curl unzip ca-certificates python3 python3-pip build-
 
 后面那串 X11 库是 cua-driver（computer-use）的可选依赖，装上省得以后补。
 
-## 五、私有仓库：先配凭据再 clone
+## 五、私有仓库：必须带 token
 
-仓库是私有的，`deploy.sh` 里的公开 URL clone **会直接失败**。顺序不能反：
+仓库已改私有（`private: true`）。**老的 `curl -fsSL .../deploy.sh | bash` 会 404**，`git clone` 报 `Repository not found`——这是私有库对未授权请求的标准回应，不是网络问题。
+
+一条命令版（deploy.sh 从 v74572f 起支持）：
+
+```bash
+export HERMESYF_TOKEN=ghp_xxx      # 能读 HermesYF 的 PAT
+curl -fsSL -H "Authorization: token $HERMESYF_TOKEN" \
+  https://raw.githubusercontent.com/Gohappyflyy/HermesYF/main/deploy.sh | bash
+```
+
+deploy.sh 的凭据优先级：`HERMESYF_TOKEN` > `GH_TOKEN` > `~/.git-credentials`；clone 完会 `git remote set-url` 把 token 从 `.git/config` 摘掉，并把凭据写进 `~/.git-credentials`(0600)，后续 `update.sh` 直接能用。拿不到 token 时会明确报错退出，不会挂在用户名提示上。
+
+无 token 的兜底（手工）：
 
 ```bash
 git config --global credential.helper store
@@ -305,7 +317,8 @@ done
 8. **机群清单不存在却以为存在。** memory 里记着 `fleet.csv` 不代表文件还在，部署前先 `ls`，缺了按上面字段重建。
 9. **拷来的 mihomo 配置带着 `tun.enable: true`。** TUN 抢走默认路由到 `Meta` 网卡，机器自己的公网 IP 消失、所有出站（含 Hermes 连 Telegram）都走代理节点，mihomo 挂掉整机断网。`curl --noproxy '*'` / `--interface` 都绕不过，只能关 TUN。判断方法：直连和 `-x 7890` 得到同一个 IP，就是 TUN 在劫持。
 10. **关 TUN 后没写 `-x` 就是直连。** 扫描 / 撞库会直接暴露云厂商 IP，比被目标封更糟。关 TUN 与留 `PROXY-NOTES.md`、任务命令写死代理是同一件事，不能只做一半。
-11. **`deploy.sh` 最后打 `✗ 验收有 FAIL` 不等于部署失败。** 没装 mihomo 时必然 3 个 FAIL（进程 / 7890 / 出口 IP），那是第十一节的工作；先把依赖、仓库、技能、记忆、人格做完再装代理。
+11. **`raw.githubusercontent.com` 有 CDN 缓存。** 刚 push 的 deploy.sh 立刻拉可能还是旧版（实测差 5 分钟以上），表现为新参数/新逻辑“不生效”。要确认远端真实内容用 API：`/repos/<owner>/<repo>/contents/deploy.sh?ref=main`（base64 解码），别用 raw 判断。
+12. **`deploy.sh` 最后打 `✗ 验收有 FAIL` 不等于部署失败。** 没装 mihomo 时必然 3 个 FAIL（进程 / 7890 / 出口 IP），那是第十一节的工作；先把依赖、仓库、技能、记忆、人格做完再装代理。
 
 ## Verification
 
