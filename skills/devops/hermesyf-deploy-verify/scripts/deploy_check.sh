@@ -83,6 +83,25 @@ else
   bad "人格插件" "$PYS 缺失"
 fi
 
+# 7b. 文件改了但 gateway 还跑旧进程 —— 这是「修好了照样被拒」的头号原因
+GW_PID=$(python3 -c "import json;print(json.load(open('$HOME/.hermes/gateway_state.json'))['pid'])" 2>/dev/null)
+if [ -n "$GW_PID" ] && [ -d "/proc/$GW_PID" ]; then
+  GW_START=$(stat -c %Y /proc/$GW_PID 2>/dev/null)
+  NEWEST=0
+  for f in "$PYS/__init__.py" "$PYS/plugin.yaml" "$HOME/.hermes/SOUL.md"; do
+    [ -f "$f" ] || continue
+    T=$(stat -c %Y "$f" 2>/dev/null || echo 0)
+    [ "$T" -gt "$NEWEST" ] && NEWEST=$T
+  done
+  if [ "${GW_START:-0}" -gt 0 ] && [ "$NEWEST" -gt "$GW_START" ]; then
+    warn "人格文件较新" "插件/SOUL 改动晚于 gateway 启动 — 没重启，当前进程还是旧人格"
+  else
+    ok "人格已载入" "gateway 启动晚于人格文件"
+  fi
+else
+  warn "gateway 进程" "无 pid 可查（跳过重启检查）"
+fi
+
 # 8. 工具链
 for b in go nuclei subfinder httpx; do
   if command -v "$b" >/dev/null 2>&1 || [ -x "/root/go/bin/$b" ]; then
