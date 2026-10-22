@@ -71,6 +71,11 @@ fi
 echo ""
 echo -e "${GREEN}✓ 部署完成！${NC}"
 echo ""
+if [ -f "$INSTALL_DIR/scripts/deploy_check.sh" ]; then
+    echo -e "${CYAN}→ 自动验收${NC}"
+    bash "$INSTALL_DIR/scripts/deploy_check.sh" || echo -e "${RED}✗ 验收有 FAIL，看上面输出${NC}"
+fi
+echo ""
 echo "后续:"
 echo "  source /root/HermesYF/activate   # 激活环境"
 echo "  hermes setup                      # 配置 API keys"
