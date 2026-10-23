@@ -9,7 +9,7 @@ import ipaddress
 import socket
 import ssl
 
-from yf_tools.assessment_plan import PlanError
+from yf_tools.assessment_plan import PlanError, ScopeViolation
 
 
 def approved_addresses(policy, host):
@@ -50,13 +50,13 @@ def resolve(policy, host, port):
         except ValueError as exc:
             raise PlanError('invalid DNS answer') from exc
         if '%' in sockaddr[0] or address not in approved:
-            raise PlanError('DNS answer outside approved addresses')
+            raise ScopeViolation('DNS answer outside approved addresses')
         if address.is_unspecified or address.is_multicast:
             raise PlanError('unsupported DNS address')
         # IPv4-mapped IPv6 must not provide an escape from the private-IP gate.
         effective = getattr(address, 'ipv4_mapped', None) or address
         if (effective.is_loopback or effective.is_private or effective.is_link_local) and policy.get('allow_private_dns') is not True:
-            raise PlanError('private DNS addresses require allow_private_dns=true')
+            raise ScopeViolation('private DNS addresses require allow_private_dns=true')
         if (family == socket.AF_INET) != (address.version == 4):
             raise PlanError('DNS address family mismatch')
         # Reconstruct from the numeric IP and approved port, not resolver metadata.

@@ -192,8 +192,11 @@ class MemoryStore:
         from tools.threat_patterns import scan_for_threats
 
         def _sanitize(entry, filename):
-            # Strict scope, same as writes; empty / already-blocked entries pass through.
-            findings = scan_for_threats(entry, scope="strict") if entry and not entry.startswith("[BLOCKED:") else None
+            # Strict scope, same as writes. Never trust a caller-controlled prefix: an entry
+            # starting with "[BLOCKED:" used to skip the scan entirely, which is trivially
+            # forgeable. Our own placeholder only ever exists in the snapshot copy, never in
+            # `entries`, so scanning unconditionally costs nothing.
+            findings = scan_for_threats(entry, scope="strict") if entry else None
             if not findings:
                 return entry
             logger.warning("Memory entry from %s blocked at load time: %s", filename, ", ".join(findings))
@@ -475,7 +478,10 @@ class MemoryStore:
         ops = [op or {} for op in operations]
         # Scan every add/replace content BEFORE touching disk -- one poisoned op rejects the batch.
         for i, op in enumerate(ops):
-            scan_error = op.get("action") in {"add", "replace"} and op.get("content") and _scan_memory_content(op["content"])
+            # Scan the text that will actually be stored. `new_text` is a supported alias for
+            # `content`, so scanning only `content` let a poisoned write bypass the scan entirely.
+            payload = op.get("content") or op.get("new_text") or ""
+            scan_error = op.get("action") in {"add", "replace"} and payload and _scan_memory_content(payload)
             if scan_error:
                 return _error(f"Operation {i + 1}: {scan_error}", "scan_blocked")
 

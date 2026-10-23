@@ -33,11 +33,9 @@ if [ -d "$SRC_ROOT" ]; then
         mkdir -p "$HERMES_HOME/skills/$d"
         cp -r "$d/." "$HERMES_HOME/skills/$d/"
       done )
-    # 清历史残留：旧版本曾把技能直接摊在 skills/ 顶层，现在全部归入分类目录
-    # 顶层不该有 SKILL.md，有就是历史残留，直接清掉（不动分类目录里的技能）
-    for f in "$HERMES_HOME"/skills/*/SKILL.md; do
-        [ -f "$f" ] && rm -rf "$(dirname "$f")"
-    done
+    # 清历史残留：只删已知旧版本摊在顶层的技能名（上面的名单已经覆盖）。
+    # 这里**不做** skills/*/SKILL.md 通配删除 —— skill_manage 不传 category 时
+    # 新建的技能正好落在顶层，通配删会把刚学到的技能一起清掉。
     n=$(find "$HERMES_HOME/skills" -name SKILL.md 2>/dev/null | wc -l)
     echo "✓ 全量技能同步 → skills/（$n 个 SKILL.md）"
 fi
@@ -120,6 +118,16 @@ fi
 CUR_USR="$(hermes config get memory.user_char_limit 2>/dev/null || true)"
 if [ "$CUR_USR" = "1375" ]; then
   hermes config set memory.user_char_limit 6875 >/dev/null 2>&1 && echo "✓ user_char_limit 1375 → 6875"
+fi
+
+# 7b. 证据保留期 —— 默认 24h 会把 scratch 里的报告/脚本/原始结果删掉，
+#     技能和 MEMORY 里记的路径就变成死链。装的时候拉到 30 天。
+mkdir -p "$HERMES_HOME"
+touch "$HERMES_HOME/.env"
+chmod 600 "$HERMES_HOME/.env"
+if ! grep -q "^HERMES_SCRATCH_MAX_IDLE_HOURS=" "$HERMES_HOME/.env"; then
+  echo "HERMES_SCRATCH_MAX_IDLE_HOURS=720" >> "$HERMES_HOME/.env"
+  echo "✓ scratch 保留期 → 720 小时（30 天）"
 fi
 
 echo

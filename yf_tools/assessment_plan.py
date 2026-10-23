@@ -20,6 +20,15 @@ class PlanError(ValueError):
     pass
 
 
+class ScopeViolation(PlanError):
+    """The target resolved or was declared outside the approved scope.
+
+    Distinct from a malformed plan: a scope violation means the policy and the live
+    network disagree, so every remaining task in the run is untrustworthy — the runner
+    aborts the chain instead of recording it as a per-task failure.
+    """
+
+
 def target_host(target):
     if not isinstance(target, str) or not target or target != target.strip():
         raise PlanError('invalid target')

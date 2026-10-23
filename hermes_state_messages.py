@@ -1457,11 +1457,14 @@ class SessionMessagesMixin:
             if not conn.execute("SELECT 1 FROM messages WHERE id = ? AND session_id = ? LIMIT 1",
                                 (around_message_id, session_id)).fetchone():
                 return {"window": [], "messages_before": 0, "messages_after": 0}
+            # Rewound rows (active=0, compacted=0) are hidden from search; the same rule has to
+            # hold here or a normal hit silently drags undone text back into context.
+            _vis = " AND (COALESCE(active, 1) = 1 OR COALESCE(compacted, 0) = 1)"
             before_rows = conn.execute(
-                "SELECT * FROM messages WHERE session_id = ? AND id <= ? ORDER BY id DESC LIMIT ?",
+                "SELECT * FROM messages WHERE session_id = ? AND id <= ?" + _vis + " ORDER BY id DESC LIMIT ?",
                 (session_id, around_message_id, window + 1)).fetchall()
             after_rows = conn.execute(
-                "SELECT * FROM messages WHERE session_id = ? AND id > ? ORDER BY id ASC LIMIT ?",
+                "SELECT * FROM messages WHERE session_id = ? AND id > ?" + _vis + " ORDER BY id ASC LIMIT ?",
                 (session_id, around_message_id, window)).fetchall()
         window_msgs = [self._row_to_message_dict(r, warn_context="get_messages_around", summary_flag=False)
                        for r in (*reversed(before_rows), *after_rows)]

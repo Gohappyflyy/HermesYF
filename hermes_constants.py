@@ -741,7 +741,13 @@ def apply_subprocess_home_env(env: MutableMapping[str, str]) -> None:
 # own venv per campaign lane) sat for three days and filled the disk.
 SCRATCH_TMP_ENV_VARS = ("TMPDIR", "TMP", "TEMP")
 SCRATCH_DIR_MARKER_ENV = "HERMES_SCRATCH_DIR"
-SCRATCH_MAX_IDLE_HOURS = 24
+# Evidence outlives a day. The 24h default silently deleted reports, dumps and scripts that
+# skills and MEMORY still pointed at, which read as "the answer is remembered but the proof is
+# gone". Override per install (HERMES_SCRATCH_MAX_IDLE_HOURS=720 = 30 days).
+try:
+    SCRATCH_MAX_IDLE_HOURS = int(os.environ.get("HERMES_SCRATCH_MAX_IDLE_HOURS", "24"))
+except ValueError:
+    SCRATCH_MAX_IDLE_HOURS = 24
 _SCRATCH_PRUNE_STAMP = ".last_prune"
 _SCRATCH_PRUNE_INTERVAL_SECONDS = 3600
 _scratch_pruned_once = False

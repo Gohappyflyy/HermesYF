@@ -28,7 +28,7 @@ from pathlib import Path
 import sys
 import time
 from urllib.parse import urlsplit
-from yf_tools.assessment_plan import build_plan, PlanError
+from yf_tools.assessment_plan import build_plan, PlanError, ScopeViolation
 from yf_tools.http_baseline import inspect
 from yf_tools.pinned_http import approved_addresses
 
@@ -179,6 +179,18 @@ def execute_task(policy, target, task_type):
         result['task_type'] = task_type
         return result
         
+    except ScopeViolation as exc:
+        # Scope violations invalidate the whole run: the policy and the live network disagree,
+        # so every remaining task would target something nobody approved. Signal the caller to
+        # abort instead of recording a per-task failure and carrying on.
+        return {
+            'task_type': task_type,
+            'kind': f'{task_type}_error',
+            'status': 'policy_violation',
+            'error': str(exc),
+            'abort_chain': True,
+            'vulnerability_verified': False
+        }
     except PlanError as exc:
         # Task-specific error, don't stop other tasks
         return {
@@ -263,6 +275,19 @@ def run(policy, targets, tasks=None):
             results.append(result)
             task_counts[task_type] += 1
             operations_done += 1
+
+            # A scope violation stops the chain: continuing would scan unapproved addresses.
+            if result.get('abort_chain'):
+                unprocessed = total_operations - operations_done
+                kind = 'http_assessment_run' if tasks == ['http_baseline'] else 'unified_assessment_run'
+                return {
+                    'kind': kind,
+                    'status': 'aborted_policy',
+                    'results': results,
+                    'task_counts': task_counts,
+                    'unprocessed_count': unprocessed,
+                    'abort_reason': result.get('error'),
+                }
             
             # Check for backpressure (429/503 from HTTP tasks)
             if result.get('http_status') in (429, 503):
