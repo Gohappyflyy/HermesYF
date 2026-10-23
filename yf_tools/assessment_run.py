@@ -219,7 +219,7 @@ def _payload_digest(obj):
     ).hexdigest()
 
 
-def run(policy, targets, tasks=None):
+def run(policy, targets, tasks=None, contract=None):
     """Execute unified assessment with multiple task types.
     
     Args:
@@ -243,6 +243,23 @@ def run(policy, targets, tasks=None):
     # Validate before execution
     validate(policy, targets, tasks)
 
+    # A contract, when supplied, is the structured form of "what this run may touch".
+    # Enforce it here: advice in a prompt cannot stop a scanner, a scope check can.
+    if contract:
+        from yf_tools.task_contract import load as _load_contract, ContractError
+        try:
+            _c = _load_contract(contract)
+        except ContractError as exc:
+            raise ScopeViolation(f'contract unusable: {exc}') from exc
+        _scope = _c.get('scope') or []
+        if not _scope:
+            raise ScopeViolation('contract has no scope; refusing to scan')
+        out_of_scope = [tg for tg in targets if not any(
+            str(tg) == str(s) or str(tg).startswith(str(s).rstrip('/') + '/') for s in _scope)]
+        if out_of_scope:
+            raise ScopeViolation(
+                'targets outside contract scope: %s' % ', '.join(str(x) for x in out_of_scope))
+
     # Bind every report to what it actually ran against: target_index alone cannot prove
     # which asset a result belongs to once the list is reordered or the file is lost.
     binding = {
@@ -253,6 +270,7 @@ def run(policy, targets, tasks=None):
 
     results = []
     next_start = None
+    _contract = contract
     interval = 1 / policy['requests_per_second']
     task_counts = {task: 0 for task in tasks}
     
@@ -353,6 +371,7 @@ def main():
     parser.add_argument('--targets', required=True, help='JSON array of approved URLs/IPs')
     parser.add_argument('--tasks', help='Comma-separated task types (http_baseline,port_scan,template_scan)')
     parser.add_argument('--output', help='new report file; existing files are never overwritten')
+    parser.add_argument('--contract', help='task contract JSON; every target must be inside its scope')
     args = parser.parse_args()
     
     try:
@@ -364,7 +383,7 @@ def main():
         if args.tasks:
             tasks = [t.strip() for t in args.tasks.split(',')]
         
-        result = run(policy, targets, tasks=tasks)
+        result = run(policy, targets, tasks=tasks, contract=getattr(args, 'contract', None))
     except (OSError, ValueError) as exc:
         print(f'assessment_run: invalid input or inactive authorization: {exc}', file=sys.stderr)
         return 1

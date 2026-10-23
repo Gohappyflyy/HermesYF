@@ -184,11 +184,43 @@ def scan_memory(kws):
     return [k for k in kws if k in low]
 
 
+def _write_contract(target, path):
+    """开一个 draft 契约，让本次任务的 scope/egress/交付物有地方落。"""
+    import subprocess
+    repo = os.environ.get("HERMESYF_REPO", "/root/HermesYF")
+    try:
+        subprocess.run([sys.executable, "-m", "yf_tools.task_contract", "new",
+                        "--target", target, "-o", path],
+                       cwd=repo, check=True, capture_output=True, text=True, timeout=30)
+        subprocess.run([sys.executable, "-m", "yf_tools.task_contract", "set", path,
+                        "--scope", target],
+                       cwd=repo, check=True, capture_output=True, text=True, timeout=30)
+        print("  → 任务契约：%s（draft；补 egress/交付物后 state ready）" % path)
+    except Exception as exc:
+        print("  → 契约生成跳过：%s" % exc)
+
+
 def main():
-    if len(sys.argv) < 2:
-        sys.exit("用法: kickoff.py <目标域名或站名> [别名1] [别名2] ...")
-    target = sys.argv[1]
-    aliases = sys.argv[2:]
+    argv = sys.argv[1:]
+    contract = None
+    if "--contract" in argv:
+        i = argv.index("--contract")
+        if i + 1 >= len(argv):
+            sys.exit("--contract 需要一个输出路径")
+        contract = argv[i + 1]
+        del argv[i:i + 2]
+    rc = _main_impl(argv)
+    if contract and argv:
+        _write_contract(argv[0], contract)
+    return rc
+
+
+def _main_impl(argv=None):
+    argv = sys.argv[1:] if argv is None else argv
+    if len(argv) < 1:
+        sys.exit("用法: kickoff.py <目标域名或站名> [别名1] [别名2] ... [--contract 路径]")
+    target = argv[0]
+    aliases = argv[1:]
     kws = keywords(target, aliases)
 
     if not kws:
