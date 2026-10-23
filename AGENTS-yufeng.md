@@ -20,11 +20,11 @@
 | 拉 Clash/vless 订阅 / 订阅站 | `proxy-subscription-harvesting` |
 | 批量打站 / 狩猎 / 战果归档 | `hunt-playbook` |
 | 通用 Web 漏洞 / 活站 | `web-hunting`、`web-app-pentest` |
-| REST / GraphQL 专项 | `blitzstrike/api-security-test` |
-| 越权 / IDOR | `blitzstrike/idor-exploitation` |
-| SSRF / 云元数据 | `blitzstrike/ssrf-cloud-metadata` |
-| 源码审计 | `blitzstrike/source-audit`、`blitzstrike/sast-code-review` |
-| 报告 / 交付 | `blitzstrike/findings-report`、`blitzstrike/write-report` |
+| REST / GraphQL 专项 | `api-security-test` |
+| 越权 / IDOR | `idor-exploitation` |
+| SSRF / 云元数据 | `ssrf-cloud-metadata` |
+| 源码审计 | `source-audit`、`sast-code-review` |
+| 报告 / 交付 | `findings-report`、`write-report` |
 | ASP.NET / IIS WebForms | `aspnet-webforms-panel-pentest` |
 | 极验 / 文字点选 | `geetest-text-click-bypass` |
 | 前端 API 面测绘 | `frontend-api-recon` |
@@ -33,7 +33,7 @@
 **对表命中就必须 `skill_view` 加载再动手，不许从零摸。**
 技能里的 URL、参数、坑都是实测过的，比现场猜快十倍。
 
-> 路径说明：表里 `blitzstrike/xxx` 是分类目录下的技能；`whmcs-assessment`、`xboard-airport-pentest`、`aspnet-webforms-panel-pentest`、`geetest-text-click-bypass` 属于实战技能，放在 `skills-local/`（安装脚本本地合并），公开仓库不含。
+> 路径说明：表里的技能名就是 `skills/<分类>/<名字>/` 下的目录名，`skill_view` 直接用名字；`whmcs-assessment`、`xboard-airport-pentest`、`aspnet-webforms-panel-pentest`、`geetest-text-click-bypass` 属于实战技能，放在 `skills-local/`（安装脚本本地合并），公开仓库不含。
 > `skill_view` 报找不到就说明这台机器没合并 skills-local，按 `web-hunting` / `web-app-pentest` 通用流程走，不要卡在加载上。
 
 

@@ -17,7 +17,12 @@ echo "=== Blitz Strike MCP 部署 ==="
 BUN="$HOME/.bun/bin/bun"
 if ! command -v bun >/dev/null 2>&1 && [ ! -x "$BUN" ]; then
     echo "→ 安装 bun..."
-    curl -fsSL https://bun.sh/install | bash
+    # 固定版本才可复现；不设 BUN_VERSION 时跟随上游 latest（记录到安装清单里，事后能查）
+    if [ -n "${BUN_VERSION:-}" ]; then
+        curl -fsSL https://bun.sh/install | bash -s "bun-v${BUN_VERSION}"
+    else
+        curl -fsSL https://bun.sh/install | bash
+    fi
     BUN="$HOME/.bun/bin/bun"
 fi
 if [ ! -x "$BUN" ]; then
@@ -32,10 +37,16 @@ if [ -d "$INSTALL_DIR/.git" ]; then
     git -C "$INSTALL_DIR" pull --ff-only origin main 2>/dev/null || \
         echo "  （拉取失败，沿用现有代码）"
 else
-    echo "→ 克隆 blitzstrike main..."
+    echo "→ 克隆 blitzstrike ${BLITZSTRIKE_REF:-main}..."
     rm -rf "$INSTALL_DIR"
-    git clone --depth 1 "$REPO" "$INSTALL_DIR"
+    git clone --depth 1 --branch "${BLITZSTRIKE_REF:-main}" "$REPO" "$INSTALL_DIR"
 fi
+
+# 安装清单：记下实际拿到的提交和 bun 版本，事后可复现/比对
+{
+  echo "blitzstrike $(git -C "$INSTALL_DIR" rev-parse HEAD 2>/dev/null) ref=${BLITZSTRIKE_REF:-main} at=$(date -Iseconds)"
+  echo "bun $("$BUN" --version 2>/dev/null)"
+} >> "${HERMES_HOME:-$HOME/.hermes}/mcp-install-manifest.txt" 2>/dev/null || true
 
 # 3. 依赖 + build
 cd "$INSTALL_DIR"

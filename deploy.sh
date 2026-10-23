@@ -58,20 +58,22 @@ if [ -d "$INSTALL_DIR/.git" ]; then
     git pull --ff-only origin main 2>/dev/null || true
 else
     echo -e "${CYAN}→${NC} clone 仓库到 $INSTALL_DIR ..."
-    if [ -z "$GH_TOKEN" ]; then
-        echo -e "${RED}✗${NC} 仓库是私有的，需要凭据：export HERMESYF_TOKEN=ghp_xxx 后重跑"
+    # 仓库是公开的：没有 token 就直接走公开 URL；有 token 则用它（私有化后可继续用）
+    rm -rf "$INSTALL_DIR"
+    if ! git clone "$REPO_URL" "$INSTALL_DIR"; then
+        echo -e "${RED}✗${NC} clone 失败。仓库若已改为私有，请 export HERMESYF_TOKEN=ghp_xxx 后重跑"
         exit 1
     fi
-    rm -rf "$INSTALL_DIR"
-    git clone "$REPO_URL" "$INSTALL_DIR"
     cd "$INSTALL_DIR"
-    # token 不留在 .git/config 里
-    git remote set-url origin "https://github.com/${REPO_SLUG}.git"
-    # 写凭据，后续 update.sh / git pull 不用再给
-    git config --global credential.helper store
-    ( umask 077; printf 'https://x-access-token:%s@github.com\n' "$GH_TOKEN" > "$HOME/.git-credentials" )
-    chmod 600 "$HOME/.git-credentials"
-    echo -e "${GREEN}✓${NC} 凭据已存 ~/.git-credentials（0600）"
+    if [ -n "$GH_TOKEN" ]; then
+        # token 不留在 .git/config 里
+        git remote set-url origin "https://github.com/${REPO_SLUG}.git"
+        # 写凭据，后续 update.sh / git pull 不用再给
+        git config --global credential.helper store
+        ( umask 077; printf 'https://x-access-token:%s@github.com\n' "$GH_TOKEN" > "$HOME/.git-credentials" )
+        chmod 600 "$HOME/.git-credentials"
+        echo -e "${GREEN}✓${NC} 凭据已存 ~/.git-credentials（0600）"
+    fi
 fi
 
 # 3. 部署
