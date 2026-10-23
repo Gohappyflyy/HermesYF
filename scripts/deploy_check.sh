@@ -10,6 +10,7 @@ if [ $# -ge 1 ]; then
   exit $?
 fi
 
+INSTALL_DIR="${INSTALL_DIR:-/root/HermesYF}"
 PASS=0; FAIL=0; WARN=0
 ok(){  printf "  \033[32m[PASS]\033[0m %-28s %s\n" "$1" "${2:-}"; PASS=$((PASS+1)); }
 bad(){ printf "  \033[31m[FAIL]\033[0m %-28s %s\n" "$1" "${2:-}"; FAIL=$((FAIL+1)); }
@@ -18,19 +19,19 @@ warn(){ printf "  \033[33m[WARN]\033[0m %-28s %s\n" "$1" "${2:-}"; WARN=$((WARN+
 echo "===== HermesYF 部署验收 $(hostname) $(date '+%F %T') ====="
 
 # 1. 仓库
-if [ -d /root/HermesYF/.git ]; then
-  cd /root/HermesYF
+if [ -d "$INSTALL_DIR/.git" ]; then
+  cd "$INSTALL_DIR"
   REV=$(git log -1 --format='%h %ad' --date=short)
   DIRTY=$(git status --porcelain | wc -l)
   ok "仓库" "$REV  未提交改动=$DIRTY"
   [ "$DIRTY" -eq 0 ] || warn "本地有未提交改动" "push 后新部署才带得走"
 else
-  bad "仓库" "/root/HermesYF 不存在，deploy.sh 没跑完"
+  bad "仓库" "$INSTALL_DIR 不存在，deploy.sh 没跑完"
 fi
 
 # 2. 技能
 N=$(find /root/.hermes/skills -name SKILL.md 2>/dev/null | wc -l)
-LOCAL=$(find /root/HermesYF/skills-local -name SKILL.md 2>/dev/null | wc -l)
+LOCAL=$(find "$INSTALL_DIR/skills-local" -name SKILL.md 2>/dev/null | wc -l)
 if [ "$N" -ge 300 ]; then ok "技能装载数" "$N （skills-local 源 $LOCAL）"
 elif [ "$N" -gt 0 ]; then warn "技能装载数" "$N 偏少，install-yufeng.sh 没跑或合并失败"
 else bad "技能装载数" "0，HERMES_HOME 或 skills 目录不对"; fi
@@ -70,7 +71,7 @@ else
 fi
 
 # 7. 人格（v4 拆掉注入后，模型会按厂商默认对齐自我劝退）
-PYS="$HOME/.hermes/plugins/yufeng-armor"
+PYS="${HERMES_HOME:-$HOME/.hermes}/plugins/yufeng-armor"
 if [ -f "$PYS/plugin.yaml" ]; then
   VER=$(grep -E '^version:' "$PYS/plugin.yaml" | awk '{print $2}' | tr -d '"')
   if grep -q 'pre_llm_call' "$PYS/__init__.py" 2>/dev/null && grep -q 'register_hook("pre_llm_call"' "$PYS/__init__.py" 2>/dev/null; then
@@ -78,17 +79,17 @@ if [ -f "$PYS/plugin.yaml" ]; then
   else
     bad "人格注入" "yufeng-armor $VER 没有注册 pre_llm_call —— 会退化成客服模式"
   fi
-  grep -q '^## 判断边界' "$HOME/.hermes/SOUL.md" 2>/dev/null && ok "SOUL 判断边界节" "存在" || warn "SOUL 判断边界节" "缺失（旧版 SOUL）"
+  grep -q '^## 判断边界' "${HERMES_HOME:-$HOME/.hermes}/SOUL.md" 2>/dev/null && ok "SOUL 判断边界节" "存在" || warn "SOUL 判断边界节" "缺失（旧版 SOUL）"
 else
   bad "人格插件" "$PYS 缺失"
 fi
 
 # 7b. 文件改了但 gateway 还跑旧进程 —— 这是「修好了照样被拒」的头号原因
-GW_PID=$(python3 -c "import json;print(json.load(open('$HOME/.hermes/gateway_state.json'))['pid'])" 2>/dev/null)
+GW_PID=$(python3 -c "import json;print(json.load(open('${HERMES_HOME:-$HOME/.hermes}/gateway_state.json'))['pid'])" 2>/dev/null)
 if [ -n "$GW_PID" ] && [ -d "/proc/$GW_PID" ]; then
   GW_START=$(stat -c %Y /proc/$GW_PID 2>/dev/null)
   NEWEST=0
-  for f in "$PYS/__init__.py" "$PYS/plugin.yaml" "$HOME/.hermes/SOUL.md"; do
+  for f in "$PYS/__init__.py" "$PYS/plugin.yaml" "${HERMES_HOME:-$HOME/.hermes}/SOUL.md"; do
     [ -f "$f" ] || continue
     T=$(stat -c %Y "$f" 2>/dev/null || echo 0)
     [ "$T" -gt "$NEWEST" ] && NEWEST=$T
