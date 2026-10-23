@@ -65,6 +65,31 @@ python3 /root/pentest/kickoff.py <目标域名> [别名...]
 
 然后补 `session_search(query='<域名> <别名>')` 查会话历史。
 
+### 任务契约（多步/长任务必用）
+
+范围、出口、交付物要落成文件，不能只停在对话里：
+
+```bash
+# 开工时顺手建（kickoff 会预填 target 到 scope）
+python3 /root/pentest/kickoff.py <目标> --contract /root/apks/contracts/<目标>.json
+
+# 补范围/出口/交付物，然后转 ready
+cd /root/HermesYF
+python3 -m yf_tools.task_contract set <契约> --egress 127.0.0.1:7890 --deliverable <产物文件名>
+python3 -m yf_tools.task_contract state <契约> ready
+python3 -m yf_tools.task_contract state <契约> running
+
+# 每产出一个产物就登记（算 sha256，之后能证明字节没变）
+python3 -m yf_tools.task_contract evidence <契约> --path <产物> --kind raw
+
+# 交付前必须过
+python3 -m yf_tools.task_contract close <契约>     # 不满足就退出码 1 并列出原因
+```
+
+- `assessment_run --contract <契约>` 会**强制**校验目标是否在 scope 内，越界直接抛异常，不发包。
+- 发现分三态：`--status observed`（看到）/ `candidate`（待复核）/ `confirmed`（已复现）。标 confirmed 但没登记 PoC 证据会被拒。
+- `close` 拒绝的三种典型原因：证据文件没了/哈希变了、`planned` 对不上 `done+skipped`、声明的交付物没登记成证据。
+
 **打完必须落盘，三条缺一不可：**
 1. 技能（`skill_manage create`）—— 攻击链 + 产物路径 + 坑
 2. MEMORY 战果索引 —— 一句话结论 + 指向技能
