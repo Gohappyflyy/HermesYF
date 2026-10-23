@@ -21,6 +21,7 @@
 向后兼容：不传 tasks 参数时默认为 http_baseline 仅模式（旧行为）。
 """
 import argparse
+import hashlib
 from datetime import datetime, timezone
 import ipaddress
 import json
@@ -211,6 +212,13 @@ def execute_task(policy, target, task_type):
         }
 
 
+def _payload_digest(obj):
+    """Stable SHA-256 over a policy/target list so a report can prove what it ran against."""
+    return hashlib.sha256(
+        json.dumps(obj, sort_keys=True, ensure_ascii=False, default=str).encode('utf-8')
+    ).hexdigest()
+
+
 def run(policy, targets, tasks=None):
     """Execute unified assessment with multiple task types.
     
@@ -234,7 +242,15 @@ def run(policy, targets, tasks=None):
     
     # Validate before execution
     validate(policy, targets, tasks)
-    
+
+    # Bind every report to what it actually ran against: target_index alone cannot prove
+    # which asset a result belongs to once the list is reordered or the file is lost.
+    binding = {
+        'policy_sha256': _payload_digest(policy),
+        'targets_sha256': _payload_digest(list(targets)),
+        'targets': list(targets),
+    }
+
     results = []
     next_start = None
     interval = 1 / policy['requests_per_second']
@@ -260,6 +276,7 @@ def run(policy, targets, tasks=None):
                 unprocessed = total_operations - operations_done
                 kind = 'http_assessment_run' if tasks == ['http_baseline'] else 'unified_assessment_run'
                 return {
+                    **binding,
                     'kind': kind,
                     'status': 'window_expired',
                     'results': results,
@@ -272,6 +289,7 @@ def run(policy, targets, tasks=None):
             # Execute task
             result = execute_task(policy, target, task_type)
             result['target_index'] = target_index
+            result['target'] = target
             results.append(result)
             task_counts[task_type] += 1
             operations_done += 1
@@ -281,6 +299,7 @@ def run(policy, targets, tasks=None):
                 unprocessed = total_operations - operations_done
                 kind = 'http_assessment_run' if tasks == ['http_baseline'] else 'unified_assessment_run'
                 return {
+                    **binding,
                     'kind': kind,
                     'status': 'aborted_policy',
                     'results': results,
@@ -294,6 +313,7 @@ def run(policy, targets, tasks=None):
                 unprocessed = total_operations - operations_done
                 kind = 'http_assessment_run' if tasks == ['http_baseline'] else 'unified_assessment_run'
                 return {
+                    **binding,
                     'kind': kind,
                     'status': 'paused_backpressure',
                     'results': results,
@@ -316,6 +336,7 @@ def run(policy, targets, tasks=None):
     kind = 'http_assessment_run' if tasks == ['http_baseline'] else 'unified_assessment_run'
     
     return {
+        **binding,
         'kind': kind,
         'status': status,
         'results': results,

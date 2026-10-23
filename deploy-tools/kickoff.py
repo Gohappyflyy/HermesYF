@@ -245,17 +245,21 @@ def main():
 
     # 4. 结论
     print("\n" + "=" * 72)
-    if total or sk:
+    if total or sk or mh:
         print("结论：这个目标有历史痕迹 / 有对应技能")
         if total:
             print("  → 先读上面列出的产物，复用已验证的链路，只补缺的部分")
         if sk:
             print("  → 动手前先 skill_view(name='%s')" % sk[0][0])
+        if mh:
+            print("  → MEMORY 里记过这个目标（%s），结论可能还在，但 evidence 路径要自己核实" % ", ".join(mh))
         print("  → 别忘了 session_search(query='%s') 补会话历史" % " ".join(kws[:2]))
         print("=" * 72)
         return 1
-    print("结论：没打过，也没有对口技能")
-    print("  → 按标准侦察流程走，打完记得落盘（技能 + MEMORY + 脚本）")
+    # 索引没命中 ≠ 从未做过：scratch 会过期、技能可能改名、会话历史不在索引里。
+    print("结论：本次索引没找到痕迹")
+    print("  → 先用 session_search 查会话历史，再按标准侦察流程走")
+    print("  → 打完记得落盘（技能 + MEMORY + 脚本）")
     print("=" * 72)
     return 0
 

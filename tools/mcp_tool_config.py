@@ -142,7 +142,13 @@ def _tail_server_stderr(server_name: str, *, max_bytes: int = 8192, max_lines: i
 
 
 # Env vars safe to pass to stdio subprocesses (no secrets).
-_SAFE_ENV_KEYS = frozenset({"PATH", "HOME", "USER", "LANG", "LC_ALL", "TERM", "SHELL", "TMPDIR"})
+_SAFE_ENV_KEYS = frozenset({
+    "PATH", "HOME", "USER", "LANG", "LC_ALL", "TERM", "SHELL", "TMPDIR",
+    # Proxy settings are routing policy, not credentials: without them a stdio MCP server
+    # opens its own direct connection and silently bypasses the operator's egress path.
+    "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY",
+    "http_proxy", "https_proxy", "all_proxy", "no_proxy",
+})
 
 # Windows process/location vars needed by launcher-style tools (e.g. Docker Desktop's MCP plugin discovery).
 _SAFE_ENV_KEYS_CASE_INSENSITIVE = frozenset({

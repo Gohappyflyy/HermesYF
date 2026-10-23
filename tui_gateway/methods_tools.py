@@ -118,6 +118,56 @@ def _mcp_server_rows():
     return _tools_mod("tui_gateway.mcp_rpc_helpers").server_configs_with_sources(config_servers)
 
 
+def _plugin_server_rows(dir_path, key, *, portable=False, catalog_titles=None):
+    """MCP servers a plugin ships, for the Plugins hub row.
+
+    Reads the plugin's own manifest (plugin.yaml / plugin.json). Most plugins declare no
+    servers, so an empty list is a normal answer; a broken manifest also degrades to []
+    because the hub row must still render. Callers previously referenced this name without
+    it existing, which raised NameError while building the plugin list.
+    """
+    import json
+    import logging
+    logger = logging.getLogger(__name__)
+    if not dir_path:
+        return []
+    try:
+        manifest = {}
+        base = Path(str(dir_path))
+        for fname in ("plugin.yaml", "plugin.yml", "plugin.json"):
+            f = base / fname
+            if not f.is_file():
+                continue
+            text = f.read_text(encoding="utf-8", errors="replace")
+            if fname.endswith(".json"):
+                manifest = json.loads(text) or {}
+            else:
+                import yaml as _yaml
+                manifest = _yaml.safe_load(text) or {}
+            break
+        if not isinstance(manifest, dict):
+            return []
+        raw = manifest.get("mcp_servers") or manifest.get("servers") or {}
+        if isinstance(raw, list):
+            raw = {str(i.get("name")): i for i in raw if isinstance(i, dict) and i.get("name")}
+        if not isinstance(raw, dict):
+            return []
+        titles = catalog_titles or {}
+        rows = []
+        for name, cfg in raw.items():
+            cfg = cfg if isinstance(cfg, dict) else {}
+            rows.append({
+                "name": str(name),
+                "title": titles.get(name, str(name)),
+                "transport": cfg.get("transport") or ("stdio" if cfg.get("command") else "http"),
+                "source": "plugin",
+            })
+        return rows
+    except Exception:
+        logger.warning("plugin server rows unavailable for %s", key, exc_info=True)
+        return []
+
+
 def _mcp_named_server(rid, params):
     """(name, servers, None) for a configured server, else (name, servers, 4064 error)."""
     name, servers = _str_arg(params, "name"), _mcp_server_rows()[0]

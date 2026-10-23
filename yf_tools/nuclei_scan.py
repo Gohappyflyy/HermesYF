@@ -200,6 +200,7 @@ def execute_scan(policy, target):
     
     # Parse JSONL output
     matches = []
+    parse_errors = 0
     if result.stdout:
         for line in result.stdout.strip().split('\n'):
             if not line.strip():
@@ -219,7 +220,9 @@ def execute_scan(policy, target):
                 
                 matches.append(match)
             except (json.JSONDecodeError, AttributeError, TypeError):
-                # Skip malformed lines
+                # Count instead of silently dropping: a run whose output could not be parsed
+                # is not the same as a clean run with zero matches.
+                parse_errors += 1
                 continue
     
     return {
@@ -229,10 +232,13 @@ def execute_scan(policy, target):
         'template_count': len(nuclei_templates),
         'match_count': len(matches),
         'matches': matches,
+        'parse_error_count': parse_errors,
+        'status': 'completed_with_parse_errors' if parse_errors else 'completed',
         'limitations': [
             'Template matches are candidates, not verified vulnerabilities',
             'No raw request/response data included',
-            'Verification requires manual analysis'
+            'Verification requires manual analysis',
+            *(['%d output line(s) could not be parsed; treat match_count as incomplete' % parse_errors] if parse_errors else []),
         ]
     }
 

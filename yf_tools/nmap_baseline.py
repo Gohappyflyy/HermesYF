@@ -45,8 +45,16 @@ def scan(policy, target):
             'vulnerability_verified': False
         }
     
-    # Build nmap command - no user-controlled flags
+    # Build nmap command - no user-controlled flags.
     port_list = ','.join(str(p) for p in ports)
+    # --max-rate caps packets/sec inside the scan itself: the per-task scheduler only spaces
+    # task starts, so without this a single nmap run floods at its own default speed and
+    # requests_per_second stops meaning anything.
+    try:
+        _rps = float(policy.get('requests_per_second') or 1)
+    except (TypeError, ValueError):
+        _rps = 1.0
+    max_rate = str(max(10, int(_rps * 20)))
     cmd = [
         nmap_path,
         '-sT',                    # TCP connect scan
@@ -55,6 +63,7 @@ def scan(policy, target):
         '-Pn',                    # Skip host discovery
         '-n',                     # No DNS resolution
         '--max-retries', '1',     # Limit retries
+        '--max-rate', max_rate,   # Bound packets/sec to the policy rate
         '--host-timeout', '120s', # Host timeout
         '-p', port_list,          # Port list
         '-oX', '-',               # XML output to stdout
