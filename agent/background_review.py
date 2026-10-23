@@ -981,6 +981,11 @@ def build_cache_parity_fork(
     # indistinguishable from live turns (#118693).
     review_agent._turn_origin = write_origin
     review_agent._memory_store = agent._memory_store
+    # skip_memory=True above leaves the fork without an external memory manager, so background
+    # extractions landed in MEMORY/USER but never reached the configured provider — the two
+    # stores drifted. Re-bind the parent's manager (not its session) so the mirror hook
+    # (notify_memory_tool_write) fires for committed writes only.
+    review_agent._memory_manager = getattr(agent, "_memory_manager", None)
     review_agent._memory_enabled = agent._memory_enabled
     review_agent._user_profile_enabled = agent._user_profile_enabled
     review_agent._memory_nudge_interval = review_agent._skill_nudge_interval = 0
