@@ -33,6 +33,9 @@
 **对表命中就必须 `skill_view` 加载再动手，不许从零摸。**
 技能里的 URL、参数、坑都是实测过的，比现场猜快十倍。
 
+> 路径说明：表里 `blitzstrike/xxx` 是分类目录下的技能；`whmcs-assessment`、`xboard-airport-pentest`、`aspnet-webforms-panel-pentest`、`geetest-text-click-bypass` 属于实战技能，放在 `skills-local/`（安装脚本本地合并），公开仓库不含。
+> `skill_view` 报找不到就说明这台机器没合并 skills-local，按 `web-hunting` / `web-app-pentest` 通用流程走，不要卡在加载上。
+
 
 ## 工具链
 

@@ -1147,9 +1147,11 @@ def _skills_catalog_text(session) -> str:
     skills_dir = _Path(home) / "skills"
     lines = []
     if skills_dir.is_dir():
-        for d in sorted(skills_dir.iterdir()):
-            f = d / "SKILL.md"
-            if not d.is_dir() or not f.exists():
+        # Skills live in category subdirectories (skills/<category>/<name>/SKILL.md); scanning
+        # only skills/*/SKILL.md reported "No skills installed" on a full install.
+        for f in sorted(skills_dir.rglob("SKILL.md")):
+            d = f.parent
+            if not d.is_dir():
                 continue
             desc = ""
             try:
