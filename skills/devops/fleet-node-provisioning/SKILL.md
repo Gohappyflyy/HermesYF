@@ -95,11 +95,15 @@ apt-get install -y -qq git curl unzip ca-certificates python3 python3-pip build-
 
 后面那串 X11 库是 cua-driver（computer-use）的可选依赖，装上省得以后补。
 
-## 五、私有仓库：必须带 token
+## 五、仓库凭据（公开时不用管）
 
-仓库已改私有（`private: true`）。**老的 `curl -fsSL .../deploy.sh | bash` 会 404**，`git clone` 报 `Repository not found`——这是私有库对未授权请求的标准回应，不是网络问题。
+当前仓库**已公开**，一键命令直接可用：
 
-一条命令版（deploy.sh 从 v74572f 起支持）：
+```bash
+curl -fsSL https://raw.githubusercontent.com/Gohappyflyy/HermesYF/main/deploy.sh | bash
+```
+
+若仓库又改回私有：无凭据会 404（`curl -f` 静默失败、`git clone` 报 `Repository not found`），改用：
 
 ```bash
 export HERMESYF_TOKEN=ghp_xxx      # 能读 HermesYF 的 PAT
@@ -107,9 +111,9 @@ curl -fsSL -H "Authorization: token $HERMESYF_TOKEN" \
   https://raw.githubusercontent.com/Gohappyflyy/HermesYF/main/deploy.sh | bash
 ```
 
-deploy.sh 的凭据优先级：`HERMESYF_TOKEN` > `GH_TOKEN` > `~/.git-credentials`；clone 完会 `git remote set-url` 把 token 从 `.git/config` 摘掉，并把凭据写进 `~/.git-credentials`(0600)，后续 `update.sh` 直接能用。拿不到 token 时会明确报错退出，不会挂在用户名提示上。
+deploy.sh 凭据优先级：`HERMESYF_TOKEN` > `GH_TOKEN` > `~/.git-credentials`；clone 完会 `git remote set-url` 把 token 从 `.git/config` 摘掉，并写 `~/.git-credentials`(0600)，后续 `update.sh` 直接能用。拿不到 token 时明确报错退出，不会挂在用户名提示上。
 
-无 token 的兜底（手工）：
+手工 clone 兜底：
 
 ```bash
 git config --global credential.helper store

@@ -2,7 +2,9 @@
 # ============================================================================
 # HermesYF 一键部署脚本 — 干净机器上一条命令完成安装
 # ============================================================================
-# 用法（在目标机上，root 用户）—— 仓库已私有，必须带 token：
+# 用法（在目标机上，root 用户）—— 公开库直接跑；若仓库改为私有，带 token：
+#   curl -fsSL https://raw.githubusercontent.com/Gohappyflyy/HermesYF/main/deploy.sh | bash
+#   私有库时：
 #   export HERMESYF_TOKEN=ghp_xxx
 #   curl -fsSL -H "Authorization: token $HERMESYF_TOKEN" \
 #     https://raw.githubusercontent.com/Gohappyflyy/HermesYF/main/deploy.sh | bash
