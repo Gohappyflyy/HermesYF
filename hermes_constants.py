@@ -743,11 +743,11 @@ SCRATCH_TMP_ENV_VARS = ("TMPDIR", "TMP", "TEMP")
 SCRATCH_DIR_MARKER_ENV = "HERMES_SCRATCH_DIR"
 # Evidence outlives a day. The 24h default silently deleted reports, dumps and scripts that
 # skills and MEMORY still pointed at, which read as "the answer is remembered but the proof is
-# gone". Override per install (HERMES_SCRATCH_MAX_IDLE_HOURS=720 = 30 days).
+# gone". Default to 30 days; HERMES_SCRATCH_MAX_IDLE_HOURS overrides (24 = old behaviour).
 try:
-    SCRATCH_MAX_IDLE_HOURS = int(os.environ.get("HERMES_SCRATCH_MAX_IDLE_HOURS", "24"))
+    SCRATCH_MAX_IDLE_HOURS = int(os.environ.get("HERMES_SCRATCH_MAX_IDLE_HOURS", "720"))
 except ValueError:
-    SCRATCH_MAX_IDLE_HOURS = 24
+    SCRATCH_MAX_IDLE_HOURS = 720
 _SCRATCH_PRUNE_STAMP = ".last_prune"
 _SCRATCH_PRUNE_INTERVAL_SECONDS = 3600
 _scratch_pruned_once = False
