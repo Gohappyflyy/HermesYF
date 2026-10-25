@@ -219,6 +219,48 @@ def _payload_digest(obj):
     ).hexdigest()
 
 
+
+def _host_of(target: str) -> str:
+    """取 target 的 hostname（统一小写、去尾点）。"""
+    s = str(target).strip()
+    if "://" not in s:
+        s = "http://" + s
+    try:
+        return (urlsplit(s).hostname or "").lower().rstrip(".")
+    except ValueError:
+        return ""
+
+
+def _target_allowed(target: str, scopes: list) -> bool:
+    """按 host 语义判定，不做字符串前缀匹配。
+
+    支持三种 scope 写法：精确 host、`*.example.com` 通配子域、CIDR。
+    前缀匹配会把 `a.com` 和 `a.com.evil.com` 混为一谈，也可能放行 URL 里带路径的变体。
+    """
+    host = _host_of(target)
+    if not host:
+        return False
+    for raw in scopes:
+        s = str(raw).strip().lower().rstrip(".")
+        if not s:
+            continue
+        if "/" in s:                      # CIDR
+            try:
+                if ipaddress.ip_address(host) in ipaddress.ip_network(s, strict=False):
+                    return True
+            except ValueError:
+                continue
+            continue
+        if s.startswith("*."):            # 通配子域（不含裸域）
+            base = s[1:]                  # ".example.com"
+            if host.endswith(base) and host != base.lstrip("."):
+                return True
+            continue
+        if host == s:                     # 精确
+            return True
+    return False
+
+
 def run(policy, targets, tasks=None, contract=None):
     """Execute unified assessment with multiple task types.
     
@@ -251,11 +293,36 @@ def run(policy, targets, tasks=None, contract=None):
             _c = _load_contract(contract)
         except ContractError as exc:
             raise ScopeViolation(f'contract unusable: {exc}') from exc
+
+        # 状态：draft 还没确定范围，delivered/stopped 已经收尾，都不该再开扫
+        _state = str(_c.get('state') or '')
+        if _state not in ('ready', 'running'):
+            raise ScopeViolation(
+                f'contract state is {_state or "(none)"!r}; only ready/running may execute')
+
+        # 出口：执行器没法在这里强制网络路径，但要求契约明确声明，
+        # 否则「所有流量走代理」只是口号
+        if not str(_c.get('egress') or '').strip():
+            raise ScopeViolation('contract has no egress; record where traffic must leave from')
+
         _scope = _c.get('scope') or []
         if not _scope:
             raise ScopeViolation('contract has no scope; refusing to scan')
-        out_of_scope = [tg for tg in targets if not any(
-            str(tg) == str(s) or str(tg).startswith(str(s).rstrip('/') + '/') for s in _scope)]
+
+        # forbidden 优先于 scope：显式排除的目标即使落在 scope 内也不放过
+        _forbidden = [str(x).strip().lower().rstrip('.') for x in (_c.get('forbidden') or []) if str(x).strip()]
+        bad = []
+        for tg in targets:
+            h = _host_of(tg)
+            for f in _forbidden:
+                if h == f or h.endswith('.' + f.lstrip('*.')) or (f.startswith('*.') and h.endswith(f[1:])):
+                    bad.append(tg)
+                    break
+        if bad:
+            raise ScopeViolation('targets match contract forbidden list: %s'
+                                 % ', '.join(str(x) for x in bad))
+
+        out_of_scope = [tg for tg in targets if not _target_allowed(tg, _scope)]
         if out_of_scope:
             raise ScopeViolation(
                 'targets outside contract scope: %s' % ', '.join(str(x) for x in out_of_scope))

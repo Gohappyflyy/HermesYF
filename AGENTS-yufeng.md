@@ -128,6 +128,23 @@ python3 /root/pentest/recon_pipeline.py -d <域名> --contract <契约>
 **6. 交付**
 `task_contract close` 通过才算完。没过就看它列的原因：补证据、补覆盖、或把发现降级成 candidate。
 
+**7. 收尾（风哥说「这单完了」之后做）**
+产物先审计再清理，别把证据当垃圾删：
+
+```bash
+# 先看清单（默认 dry-run，什么都不动）
+python3 /root/pentest/task_closeout.py --contract <契约> --workdir <产物目录>
+# 确认后执行
+python3 /root/pentest/task_closeout.py --contract <契约> --workdir <产物目录> --apply
+```
+
+三分类自动判定：
+- **KEEP** 报告/订阅/账号本/PoC 与提取脚本 → 原样归档到 `/root/apks/archive/<目标>/<日期>/keep/`
+- **ARCHIVE** 原始 jsonl、列表 txt、扫描输出 → 打包 `raw.tar.gz`
+- **DROP** 空文件/日志/临时/缓存/备份 → 删除（**必须清**，留着下次误导人）
+
+规则外的一律留在 **UNKNOWN** 里不动，人工过一眼再定。归档写 `closeout.json`（sha256 清单），契约里指向旧路径的证据自动改到新目录。
+
 > 非渗透任务（写代码、查资料、运维、部署、审计）**不走这套**，按官方 Hermes 流程即可，别多套一层。
 
 ## 集群作战

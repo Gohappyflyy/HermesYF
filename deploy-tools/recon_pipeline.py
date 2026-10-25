@@ -62,6 +62,7 @@ def main() -> int:
     ap.add_argument("--ports", action="store_true", help="跑 naabu top100")
     ap.add_argument("--skip-sub", action="store_true", help="跳过 subfinder（已有 subs.txt 时）")
     ap.add_argument("--proxy", default="http://127.0.0.1:7890")
+    ap.add_argument("--socks5", default="", help="naabu 专用 socks5（如 socks5://127.0.0.1:7891）；不给则 --ports 拒绝执行")
     ap.add_argument("--no-proxy", action="store_true")
     ap.add_argument("--timeout", type=int, default=600, help="单步超时秒")
     args = ap.parse_args()
@@ -72,7 +73,12 @@ def main() -> int:
     proxy = "" if args.no_proxy else args.proxy
 
     summary: dict = {"domain": domain, "started": datetime.now().isoformat(timespec="seconds"),
-                     "steps": {}, "tools": {}}
+                     "steps": {}, "tools": {}, "errors": []}
+    errors: list[str] = summary["errors"]
+
+    def fail(msg: str) -> None:
+        errors.append(msg)
+        print(f"  !! {msg}")
 
     def note(step: str, **kw):
         summary["steps"][step] = kw
@@ -86,13 +92,15 @@ def main() -> int:
     if not args.skip_sub:
         sf = tool("subfinder")
         if not sf:
-            print("  !! subfinder 缺失，跳过子域枚举（后续只有主域）")
+            fail("subfinder 缺失，跳过子域枚举（后续只有主域）")
             note("subdomains", count=0, error="subfinder missing")
         else:
             env = {"HTTPS_PROXY": proxy, "HTTP_PROXY": proxy} if proxy else {}
             rc, so, se = run([sf, "-d", domain, "-all", "-silent", "-timeout", "10"], args.timeout, env)
             subs = sorted({l.strip().lower() for l in so.splitlines() if l.strip()})
             subs_file.write_text("\n".join(subs) + ("\n" if subs else ""), encoding="utf-8")
+            if rc != 0:
+                fail(f"subfinder 退出码 {rc}: {se.strip().splitlines()[-1][:80] if se.strip() else ''}")
             note("subdomains", count=len(subs), rc=rc, err=se.strip().splitlines()[-1][:80] if se.strip() else "")
     elif subs_file.is_file():
         subs = [l.strip() for l in subs_file.read_text(encoding="utf-8").splitlines() if l.strip()]
@@ -106,7 +114,7 @@ def main() -> int:
     hx = tool("httpx")
     live: list[dict] = []
     if not hx:
-        print("  !! httpx 缺失，无法做存活探测")
+        fail("httpx 缺失，无法做存活探测")
         note("live", count=0, error="httpx missing")
     else:
         cmd = [hx, "-l", str(outdir / "hosts.txt"), "-silent", "-json",
@@ -134,6 +142,10 @@ def main() -> int:
         (outdir / "tech.txt").write_text(
             "\n".join(f"{t}\t{n}" for t, n in tech.most_common()) + ("\n" if tech else ""), encoding="utf-8")
         codes = Counter(str(x.get("status_code")) for x in live)
+        if rc != 0:
+            fail(f"httpx 退出码 {rc}: {se.strip().splitlines()[-1][:80] if se.strip() else ''}")
+        elif not live:
+            fail("httpx 没有任何存活结果（0 行）—— 可能全站挂了，也可能参数/代理不对")
         note("live", count=len(live), codes=dict(codes.most_common(6)),
              techs=len(tech), rc=rc,
              err=se.strip().splitlines()[-1][:80] if se.strip() else "")
@@ -142,12 +154,17 @@ def main() -> int:
     if args.ports:
         nb = tool("naabu")
         if not nb:
+            fail("naabu 缺失，跳过端口扫描")
             note("ports", error="naabu missing")
+        elif not args.socks5:
+            # 以前把 http://…:7890 硬替换成 socks5://…:7891，纯靠猜端口：
+            # 自定义代理时映射错、7891 没监听时 naabu 可能裸连。
+            fail("--ports 需要显式 --socks5（不猜端口映射），已跳过端口扫描")
+            note("ports", error="socks5 not specified")
         else:
             cmd = [nb, "-list", str(outdir / "hosts.txt"), "-top-ports", "100", "-silent",
                    "-rate", "500", "-timeout", "1500"]
-            if proxy:
-                cmd += ["-proxy", proxy.replace("http://", "socks5://").replace("7890", "7891")]
+            cmd += ["-proxy", args.socks5]
             rc, so, se = run(cmd, args.timeout)
             (outdir / "ports.txt").write_text(so, encoding="utf-8")
             note("ports", lines=len(so.splitlines()), rc=rc,
@@ -165,18 +182,32 @@ def main() -> int:
     print(f"\n产物目录 {outdir}")
     for f in sorted(outdir.iterdir()):
         print(f"  {f.name:<14} {f.stat().st_size:>10,} B")
+    if errors:
+        print(f"\n!! {len(errors)} 个错误（侦察不完整，不要当成已完成）")
+        for e in errors:
+            print("   -", e)
 
     # 6. 登记进任务契约（可选）
     if args.contract:
         repo = os.environ.get("HERMESYF_REPO", "/root/HermesYF")
+        registered, failed_reg = 0, []
         for f in ("live.jsonl", "live.txt", "tech.txt", "hosts.txt", "summary.json"):
             fp = outdir / f
-            if fp.is_file():
-                subprocess.run([sys.executable, "-m", "yf_tools.task_contract", "evidence",
-                                args.contract, "--path", str(fp), "--kind", "recon"],
-                               cwd=repo, capture_output=True, text=True, timeout=30)
-        print("已登记进契约:", args.contract)
-    return 0
+            if not fp.is_file():
+                continue
+            pr = subprocess.run([sys.executable, "-m", "yf_tools.task_contract", "evidence",
+                                 args.contract, "--path", str(fp), "--kind", "recon"],
+                                cwd=repo, capture_output=True, text=True, timeout=30)
+            if pr.returncode == 0:
+                registered += 1
+            else:
+                failed_reg.append(f"{f}: {(pr.stderr or '').strip()[:80]}")
+        if failed_reg:
+            fail("契约登记失败: " + "; ".join(failed_reg))
+            print(f"登记 {registered} 个，失败 {len(failed_reg)} 个")
+        else:
+            print(f"已登记进契约（{registered} 个文件）: {args.contract}")
+    return 1 if errors else 0
 
 
 if __name__ == "__main__":

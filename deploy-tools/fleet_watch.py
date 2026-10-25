@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import json
 import os
 import subprocess
@@ -48,17 +49,25 @@ def load_nodes() -> list[dict]:
 
 
 REMOTE = r"""
+if [ -n "$HWP" ]; then echo "PROCS $(pgrep -fc -- "$HWP" 2>/dev/null || echo 0)"; else echo "PROCS -"; fi
 echo "LOAD $(cut -d' ' -f1-3 /proc/loadavg)"
-echo "UPTIME $(cut -d' ' -f1 /proc/uptime)"
-if [ -n "{pattern}" ]; then echo "PROCS $(pgrep -fc '{pattern}' 2>/dev/null || echo 0)"; else echo "PROCS -"; fi
-if [ -n "{dir}" ] && [ -d "{dir}" ]; then
-  echo "FILES $(find {dir} -type f 2>/dev/null | wc -l)"
-  echo "BYTES $(du -sb {dir} 2>/dev/null | cut -f1)"
+if [ -n "$HWD" ] && [ -d "$HWD" ]; then
+  echo "FILES $(find "$HWD" -type f 2>/dev/null | wc -l)"
+  echo "BYTES $(du -sb "$HWD" 2>/dev/null | cut -f1)"
 else
   echo "FILES -"; echo "BYTES -"
 fi
 echo "DISK $(df -P / | awk 'NR==2{print $5}')"
 """
+
+
+def _b64(value: str) -> str:
+    """把参数编成 base64：只含 [A-Za-z0-9+/=]，拼进远端脚本不会被 shell 解释。
+
+    绝不能把 --pattern / --dir 原样拼进 ssh 命令：`-p 'x; id; #'` 会在每台
+    fleet 节点上以 root 执行任意命令。
+    """
+    return base64.b64encode((value or "").encode()).decode() or ""
 
 
 def probe(node: dict, pattern: str, outdir: str) -> dict:
@@ -70,9 +79,12 @@ def probe(node: dict, pattern: str, outdir: str) -> dict:
     if (node.get("auth") or "").strip() == "password":
         res["skip"] = "无密钥（auth=password），需手工 sshpass"
         return res
+    # 参数只经环境变量进出，远端脚本里逐字引用（已 base64 解码），不参与命令拼接
+    remote = ('HWP=$(echo "$HWP_B64" | base64 -d); HWD=$(echo "$HWD_B64" | base64 -d); '
+              + REMOTE)
     cmd = ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=6",
-           "-o", "StrictHostKeyChecking=no", f"root@{ip}",
-           REMOTE.replace("{pattern}", pattern or "").replace("{dir}", outdir or "")]
+           "-o", "StrictHostKeyChecking=accept-new", f"root@{ip}",
+           f"HWP_B64={_b64(pattern)}; HWD_B64={_b64(outdir)}; {remote}"]
     try:
         p = subprocess.run(cmd, capture_output=True, text=True, timeout=20)
         if p.returncode != 0:
@@ -155,12 +167,18 @@ def main() -> int:
             line = fmt(r)
             print(line + (("   ⚠ " + "; ".join(bad)) if bad else ""))
         abnormal = [r for r in rows if verdict(r, args.pattern, args.dir)]
+        skipped = [r for r in rows if r.get("skip")]
+        healthy = len(rows) - len(abnormal) - len(skipped)
         if args.json:
             print(json.dumps({"rows": rows, "abnormal": [r["ip"] for r in abnormal]},
                              ensure_ascii=False, indent=1))
         else:
-            print(f"\n{len(rows)-len(abnormal)}/{len(rows)} 正常"
-                  + (f"，异常: {', '.join(r['ip'] for r in abnormal)}" if abnormal else ""))
+            tail = f"\n正常 {healthy} / 异常 {len(abnormal)} / 跳过 {len(skipped)}  （共 {len(rows)}）"
+            if abnormal:
+                tail += f"\n异常节点: {', '.join(r['ip'] for r in abnormal)}"
+            if skipped:
+                tail += f"\n跳过节点(无密钥，未被验证): {', '.join(r['ip'] for r in skipped)}"
+            print(tail)
         return 1 if abnormal else 0
 
     # 周期巡检：只报异常和产物停滞

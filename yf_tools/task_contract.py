@@ -182,15 +182,50 @@ def add_finding(data: dict, fid: str, status: str, note: str = "", target: str =
     return data
 
 
+def _skipped_items(cov: dict) -> list[dict]:
+    """把 skipped 统一成 [{id, reason, at}]。旧格式（纯字符串）视为无原因。"""
+    out = []
+    for item in cov.get("skipped") or []:
+        if isinstance(item, dict):
+            out.append(item)
+        else:
+            out.append({"id": str(item), "reason": "", "legacy": True})
+    return out
+
+
+def add_skipped(data: dict, task_id: str, reason: str) -> dict:
+    """登记一个「计划内但跳过」的任务。必须有 id 和原因，且不能超过未完成数。
+
+    只允许字符串列表时，把 ["x","x","x",...] 塞满就能让 coverage 看起来齐了 ——
+    所以 id 唯一、原因必填、数量封顶三条都在这里挡住。
+    """
+    task_id = (task_id or "").strip()
+    reason = (reason or "").strip()
+    if not task_id or not reason:
+        raise ContractError("skip 需要 --id 和 --reason（缺原因等于没说）")
+    cov = data.setdefault("coverage", {"planned": 0, "done": 0, "skipped": []})
+    items = _skipped_items(cov)
+    cov["skipped"] = items
+    if any(i.get("id") == task_id for i in items):
+        raise ContractError(f"skip id 重复: {task_id}")
+    planned, done = int(cov.get("planned") or 0), int(cov.get("done") or 0)
+    if planned and len(items) >= max(0, planned - done):
+        raise ContractError(
+            f"skip 数量超过未完成数（planned {planned}, done {done}, 已 skip {len(items)}）")
+    items.append({"id": task_id, "reason": reason, "at": _now()})
+    return data
+
+
 def set_coverage(data: dict, planned: int | None = None, done: int | None = None,
-                 skipped: list[str] | None = None) -> dict:
+                 skipped: list | None = None) -> dict:
     cov = data.setdefault("coverage", {"planned": 0, "done": 0, "skipped": []})
     if planned is not None:
         cov["planned"] = int(planned)
     if done is not None:
         cov["done"] = int(done)
     if skipped:
-        cov["skipped"] = list(skipped)
+        cov["skipped"] = [s if isinstance(s, dict) else {"id": str(s), "reason": "", "legacy": True}
+                          for s in skipped]
     return data
 
 
@@ -224,13 +259,24 @@ def verify(data: dict) -> list[str]:
 
     cov = data.get("coverage") or {}
     planned, done = int(cov.get("planned") or 0), int(cov.get("done") or 0)
+    skipped = _skipped_items(cov)
+    if skipped:
+        ids = [s.get("id") for s in skipped]
+        dup = {i for i in ids if ids.count(i) > 1}
+        if dup:
+            problems.append(f"skipped 有重复 id（覆盖度不可信）: {sorted(dup)[:3]}")
+        no_reason = [s.get("id") for s in skipped if not (s.get("reason") or "").strip()]
+        if no_reason:
+            problems.append(f"skipped 缺原因: {no_reason[:3]}")
+        if len(skipped) > max(0, planned - done):
+            problems.append(
+                f"skipped 数量超过未完成数（planned {planned}, done {done}, skipped {len(skipped)}）")
     if planned and done < planned:
-        skipped = cov.get("skipped") or []
         unexplained = planned - done - len(skipped)
         if unexplained > 0:
             problems.append(
                 f"coverage incomplete: planned {planned}, done {done}, "
-                f"skipped listed {len(skipped)}, unexplained {unexplained}"
+                f"skipped {len(skipped)}, unexplained {unexplained}"
             )
 
     for name in data.get("deliverables", []):
@@ -298,6 +344,11 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     p_c.add_argument("--done", type=int, default=None)
     p_c.add_argument("--skipped", action="append", default=None)
 
+    p_skip = sub.add_parser("skip", help="记录一个计划内跳过的任务（必须有原因）")
+    p_skip.add_argument("file")
+    p_skip.add_argument("--id", required=True, help="任务标识，如 http-baseline:host:443")
+    p_skip.add_argument("--reason", required=True)
+
     p_v = sub.add_parser("verify", help="check without closing")
     p_v.add_argument("file")
 
@@ -355,6 +406,12 @@ def main(argv: list[str] | None = None) -> int:
         set_coverage(data, args.planned, args.done, args.skipped)
         save(args.file, data)
         print(json.dumps(data["coverage"], ensure_ascii=False))
+        return 0
+
+    if args.cmd == "skip":
+        add_skipped(data, args.id, args.reason)
+        save(args.file, data)
+        print(f"skipped={len(_skipped_items(data['coverage']))}")
         return 0
 
     if args.cmd == "verify":
