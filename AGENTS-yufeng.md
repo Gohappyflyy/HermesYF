@@ -100,8 +100,17 @@ python3 /root/pentest/kickoff.py <目标> --contract /root/apks/contracts/<目�
 ```
 看三段：历史产物 / 技能匹配 / MEMORY 命中。有旧链路就复用，不重复造轮子。
 
-**2. 信息收集**
-按 `/root/pentest/skill_index.md` 的「侦察测绘」段挑 2-3 个技能加载，跑子域 → 存活 → 指纹 → 技术栈。产物直接 `task_contract evidence` 登记。
+**2. 信息收集（一条命令，别手拼顺序）**
+```bash
+python3 /root/pentest/recon_pipeline.py -d <域名> --contract <契约>
+```
+产出：`subs.txt`（子域）、`live.jsonl`（存活+标题+技术栈+IP/CNAME）、`tech.txt`（技术栈排序）、`summary.json`。全部自动登记进契约。
+
+- 加 `--ports` 跑 naabu top100；加 `--skip-sub` 复用已有子域列表
+- **看到 Cloudflare/CDN** → 加载 `origin-ip-discovery` 找源站，别对着 CF IP 打
+- **需要目录/接口** → 加载 `frontend-api-recon`（JS 挖接口）或 `web-enumeration`（目录爆破）
+- **要判断子域接管** → `subdomain-takeover-hunt` / `hunt-subdomain`
+- 主线跑完再加载细分技能，不要一上来在 4 个 recon 技能里挑来挑去
 
 **3. 清点武器（关键，不许跳过）**
 在 `skill_index.md` 里按「框架与组件」「Web 漏洞」段对号：
