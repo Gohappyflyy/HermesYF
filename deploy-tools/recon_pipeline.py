@@ -27,6 +27,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -36,6 +37,28 @@ from datetime import datetime
 from pathlib import Path
 
 GOBIN = Path("/root/go/bin")
+RECON_BASE = Path(os.environ.get("HERMES_RECON_BASE", "/root/apks/recon"))
+DOMAIN_RE = re.compile(r"^(?!-)[a-z0-9-]{1,63}(?<!-)(\.(?!-)[a-z0-9-]{1,63}(?<!-))+$")
+
+
+def _clean_domain(raw: str) -> str:
+    """只接受域名或 IPv4。目标字符串会进路径，`../..` 之类必须在这里挡住。"""
+    d = (raw or "").strip().rstrip(".").lower()
+    if not d or len(d) > 253:
+        raise SystemExit(f"域名不合法: {raw!r}")
+    if re.fullmatch(r"\d{1,3}(\.\d{1,3}){3}", d):
+        return d
+    if not DOMAIN_RE.match(d) or ".." in d:
+        raise SystemExit(f"域名不合法: {raw!r}（只接受 a.b.c 形式或 IPv4）")
+    return d
+
+
+def _norm_egress(value: str) -> str:
+    v = (value or "").strip().lower()
+    for pre in ("http://", "https://", "socks5://", "socks5h://"):
+        if v.startswith(pre):
+            v = v[len(pre):]
+    return v.rstrip("/")
 
 
 def tool(name: str) -> str | None:
@@ -64,13 +87,50 @@ def main() -> int:
     ap.add_argument("--proxy", default="http://127.0.0.1:7890")
     ap.add_argument("--socks5", default="", help="naabu 专用 socks5（如 socks5://127.0.0.1:7891）；不给则 --ports 拒绝执行")
     ap.add_argument("--no-proxy", action="store_true")
+    ap.add_argument("--allow-outside", action="store_true",
+                    help="允许 --out 落在 ~/apks/recon 之外（只给测试用，契约场景别开）")
     ap.add_argument("--timeout", type=int, default=600, help="单步超时秒")
     args = ap.parse_args()
 
-    domain = args.domain.strip().rstrip(".")
-    outdir = Path(args.out or f"/root/apks/recon/{domain}")
-    outdir.mkdir(parents=True, exist_ok=True)
+    domain = _clean_domain(args.domain)
+
+    outdir = Path(args.out or (RECON_BASE / domain)).resolve()
+    base = RECON_BASE.resolve()
+    if not args.allow_outside and base not in outdir.parents and outdir != base:
+        raise SystemExit(f"--out 必须在 {base} 之内（防路径穿越）: {outdir}")
+
     proxy = "" if args.no_proxy else args.proxy
+
+    # 契约是硬约束：侦察不能绕开任务范围、出口和禁打清单
+    if args.contract:
+        try:
+            cdata = json.loads(Path(args.contract).read_text(encoding="utf-8"))
+        except Exception as exc:
+            raise SystemExit(f"契约读不了: {exc}")
+        st = str(cdata.get("state") or "")
+        if st not in ("ready", "running"):
+            raise SystemExit(f"契约 state={st!r}，只有 ready/running 可以执行")
+        c_egress = str(cdata.get("egress") or "").strip()
+        if not c_egress:
+            raise SystemExit("契约没写 egress，拒绝执行")
+        if args.no_proxy:
+            raise SystemExit("契约要求走代理，--no-proxy 与契约冲突，拒绝执行")
+        if _norm_egress(args.proxy) != _norm_egress(c_egress):
+            raise SystemExit(f"--proxy {args.proxy} 与契约 egress {c_egress} 不一致，拒绝执行")
+        forbidden = [str(x).strip().lower() for x in (cdata.get("forbidden") or []) if str(x).strip()]
+        for f in forbidden:
+            if domain == f or domain.endswith("." + f.lstrip("*.")):
+                raise SystemExit(f"{domain} 命中契约 forbidden: {f}")
+        try:
+            sys.path.insert(0, os.environ.get("HERMESYF_REPO", "/root/HermesYF"))
+            from yf_tools.assessment_run import _target_allowed
+        except Exception:
+            _target_allowed = None
+        scope = cdata.get("scope") or []
+        if _target_allowed and scope and not _target_allowed(domain, scope):
+            raise SystemExit(f"{domain} 不在契约 scope 内: {scope}")
+
+    outdir.mkdir(parents=True, exist_ok=True)
 
     summary: dict = {"domain": domain, "started": datetime.now().isoformat(timespec="seconds"),
                      "steps": {}, "tools": {}, "errors": []}

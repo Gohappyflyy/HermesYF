@@ -32,6 +32,7 @@ import fnmatch
 import hashlib
 import json
 import os
+import re
 import shutil
 import tarfile
 import time
@@ -54,6 +55,15 @@ DROP_PATTERNS = [
     "*.retry", "*.lock", ".DS_Store", "Thumbs.db",
 ]
 DROP_DIRS = ["__pycache__", ".pytest_cache", ".mypy_cache", "node_modules"]
+
+
+def safe_target(raw: str) -> str:
+    """归档目录名只允许 [A-Za-z0-9._-]，挡掉 .. / 反斜杠 / 控制字符 / 跨平台特殊名。"""
+    s = str(raw or "").strip()
+    s = re.sub(r"[^A-Za-z0-9._-]+", "_", s).strip("._-")
+    if not s or s in (".", ".."):
+        raise SystemExit(f"归档目标名不合法: {raw!r}")
+    return s[:80]
 
 
 def sha256(p: Path, limit: int = 64 * 1024 * 1024) -> str:
@@ -115,7 +125,10 @@ def main() -> int:
         target = args.target or Path(args.workdir[0]).name
 
     stamp = time.strftime("%Y-%m-%d")
-    dest = ARCHIVE_ROOT / target.replace("/", "_") / stamp
+    dest = (ARCHIVE_ROOT / safe_target(target) / stamp).resolve()
+    root_resolved = ARCHIVE_ROOT.resolve()
+    if root_resolved not in dest.parents:
+        raise SystemExit(f"归档路径越界: {dest}")
 
     buckets: dict[str, list[Path]] = {"KEEP": [], "ARCHIVE": [], "DROP": [], "UNKNOWN": []}
     for wd in args.workdir:
@@ -171,73 +184,123 @@ def main() -> int:
     dest.mkdir(parents=True, exist_ok=True)
     keep_dir = dest / "keep"
     keep_dir.mkdir(exist_ok=True)
+    pending_keep: list[Path] = []
+    pending_archive: list[Path] = []
 
-    # 1) KEEP：复制 + 哈希核对后才删原文件
+    def src_root_of(f: Path) -> Path | None:
+        for w in args.workdir:
+            wp = Path(w)
+            if wp in f.parents or wp == f.parent:
+                return wp
+        return None
+
+    # 1) KEEP：复制 + 哈希核对（此时不动原文件）
     for f in buckets["KEEP"]:
         if not f.is_file():
             continue
         src_hash = sha256(f)
-        out = keep_dir / f.name
+        root = src_root_of(f)
+        arc = str(root.name / f.relative_to(root)) if root else f.name
+        out = keep_dir / arc
+        out.parent.mkdir(parents=True, exist_ok=True)
         n = 1
         while out.exists() and sha256(out) != src_hash:
-            out = keep_dir / f"{f.stem}_{n}{f.suffix}"
+            out = out.with_name(f"{out.stem}_{n}{out.suffix}")
             n += 1
         shutil.copy2(f, out)
         if sha256(out) == src_hash:
-            manifest["keep"].append({"name": out.name, "sha256": src_hash, "bytes": f.stat().st_size,
-                                     "from": str(f)})
-            f.unlink()
+            manifest["keep"].append({"name": str(out.relative_to(dest)), "sha256": src_hash,
+                                     "bytes": f.stat().st_size, "from": str(f)})
+            pending_keep.append(f)
         else:
             print(f"  !! 哈希不符，原文件保留: {f}")
 
-    # 2) ARCHIVE：打 tar.gz
+    # 2) ARCHIVE：打包后逐个成员校验，校验不过就一个都不删
     if buckets["ARCHIVE"]:
+        pairs = []
+        used = set()
+        for f in buckets["ARCHIVE"]:
+            if not f.is_file():
+                continue
+            root = src_root_of(f)
+            arc = str(root.name / f.relative_to(root)) if root else f"misc/{f.name}"
+            while arc in used:                       # 不同 workdir 同名时加后缀
+                stem, dot, ext = arc.rpartition(".")
+                arc = f"{stem}_{len(used)}{dot}{ext}"
+            used.add(arc)
+            pairs.append((f, arc))
         tar_path = dest / "raw.tar.gz"
         with tarfile.open(tar_path, "w:gz") as tf:
-            for f in buckets["ARCHIVE"]:
-                if f.is_file():
-                    tf.add(f, arcname=f.name)
-        manifest["raw"].append({"name": tar_path.name, "sha256": sha256(tar_path),
-                                "bytes": tar_path.stat().st_size,
-                                "files": len(buckets["ARCHIVE"])})
-        for f in buckets["ARCHIVE"]:
-            if f.is_file():
-                f.unlink()
+            for f, arc in pairs:
+                tf.add(f, arcname=arc)
+        with tarfile.open(tar_path) as tf:
+            members = {m.name: m.size for m in tf.getmembers() if m.isfile()}
+        bad = [(arc, f) for f, arc in pairs if members.get(arc) != f.stat().st_size]
+        if bad:
+            print(f"  !! 归档校验失败，源文件全部保留: {bad[:3]}")
+            manifest["archive_failed"] = [str(f) for _, f in bad]
+        else:
+            manifest["raw"].append({"name": tar_path.name, "sha256": sha256(tar_path),
+                                    "bytes": tar_path.stat().st_size, "files": len(pairs)})
+            pending_archive = [f for f, _ in pairs]
 
-    # 3) DROP：删除
-    for f in buckets["DROP"]:
-        try:
-            if f.is_dir():
-                shutil.rmtree(f, ignore_errors=True)
-            else:
-                f.unlink()
-            manifest["dropped"].append(str(f))
-        except FileNotFoundError:
-            pass                      # 父目录已经连同删掉了
-        except OSError as exc:
-            print(f"  !! 删不掉 {f}: {exc}")
-
-    manifest["unknown"] = [str(f) for f in buckets["UNKNOWN"]]
-    (dest / "closeout.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=1),
-                                        encoding="utf-8")
-
-    # 4) 契约里指向旧路径的证据，改到归档位置
+    # 3) 先把契约指过去（读回校验），再删原文件 —— 中途断掉也不会留下断链
     if contract and args.contract:
-        moved = {Path(e["from"]).as_posix(): keep_dir / e["name"] for e in manifest["keep"]}
+        moved = {Path(e["from"]).resolve(): dest / e["name"] for e in manifest["keep"]}
         changed = 0
         for ev in contract.get("evidence", []):
-            newp = moved.get(Path(ev.get("path", "")).as_posix())
+            newp = moved.get(Path(ev.get("path", "")).resolve())
             if newp and newp.is_file():
                 ev["path"] = str(newp)
                 ev["sha256"] = sha256(newp)
                 changed += 1
         if changed:
-            Path(args.contract).write_text(json.dumps(contract, ensure_ascii=False, indent=1),
-                                           encoding="utf-8")
+            tmp = Path(args.contract).with_suffix(".tmp.json")
+            tmp.write_text(json.dumps(contract, ensure_ascii=False, indent=1), encoding="utf-8")
+            back = json.loads(tmp.read_text(encoding="utf-8"))
+            ok = all(Path(e.get("path", "")).is_file() for e in back.get("evidence", []))
+            if not ok:
+                print("  !! 契约回读校验失败，原文件不删，契约不改")
+                tmp.unlink(missing_ok=True)
+                return 3
+            tmp.replace(args.contract)
         print(f"\n契约更新: {changed} 条证据路径改到归档目录")
 
-    print(f"\n完成。归档 {len(manifest['keep'])} 个关键产物 + raw.tar.gz，"
-          f"清理 {len(manifest['dropped'])} 个废弃项")
+    # 4) 全部核对通过，才删源文件
+    for f in pending_keep + pending_archive:
+        try:
+            f.unlink()
+        except FileNotFoundError:
+            pass
+        except OSError as exc:
+            print(f"  !! 删不掉 {f}: {exc}")
+
+    # 5) DROP：删完要确认真的没了
+    failed_del = []
+    for f in buckets["DROP"]:
+        try:
+            if f.is_dir():
+                shutil.rmtree(f)
+            else:
+                f.unlink()
+        except FileNotFoundError:
+            pass
+        except OSError as exc:
+            print(f"  !! 删不掉 {f}: {exc}")
+        if f.exists():
+            failed_del.append(str(f))
+        else:
+            manifest["dropped"].append(str(f))
+
+    manifest["delete_failed"] = failed_del
+    manifest["unknown"] = [str(f) for f in buckets["UNKNOWN"]]
+    (dest / "closeout.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=1),
+                                        encoding="utf-8")
+
+    print(f"\n完成。归档 {len(manifest['keep'])} 个关键产物"
+          f"{' + raw.tar.gz' if manifest['raw'] else ''}，清理 {len(manifest['dropped'])} 个废弃项")
+    if failed_del:
+        print(f"!! {len(failed_del)} 项没删掉，见 closeout.json 的 delete_failed")
     print(f"清单: {dest/'closeout.json'}")
     return 0
 

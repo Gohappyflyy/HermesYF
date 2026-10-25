@@ -151,6 +151,7 @@ def add_evidence(data: dict, path: str, kind: str = "artifact", note: str = "") 
     if not p.is_file():
         raise ContractError(f"evidence file does not exist: {p}")
     entry = {
+        "id": f"E{len(data.get('evidence') or []) + 1}",
         "path": str(p.resolve()),
         "sha256": _sha256(p),
         "bytes": p.stat().st_size,
@@ -166,19 +167,35 @@ def add_evidence(data: dict, path: str, kind: str = "artifact", note: str = "") 
     return data
 
 
-def add_finding(data: dict, fid: str, status: str, note: str = "", target: str = "") -> dict:
+def add_finding(data: dict, fid: str, status: str, note: str = "", target: str = "",
+                evidence_ids: list | None = None) -> dict:
+    """登记发现。confirmed 必须绑定具体的 evidence id，不能只是「有任意证据」。
+
+    只检查「存在某类证据」时，拿一个无关的 hosts.txt 就能把 finding 标成已复现。
+    """
     if status not in FINDING_STATES:
         raise ContractError(f"finding status must be one of {FINDING_STATES}")
-    if status == "confirmed" and not data.get("evidence"):
-        raise ContractError("a confirmed finding needs at least one registered evidence file")
+    ids = [str(x) for x in (evidence_ids or [])]
+    if status == "confirmed":
+        if not ids:
+            raise ContractError(
+                "confirmed finding 必须用 --evidence 绑定证据 ID（先 task_contract evidence 登记，再看返回的 id）")
+        known = {e.get("id") for e in data.get("evidence") or []}
+        missing = [i for i in ids if i not in known]
+        if missing:
+            raise ContractError(f"evidence id 不存在: {missing}（已登记: {sorted(known)}）")
     findings = data.setdefault("findings", [])
     for item in findings:
         if item.get("id") == fid:
             item.update({"status": status, "note": note, "at": _now()})
+            if ids:
+                item["evidence_ids"] = ids
             if target:
                 item["target"] = target
             return data
-    findings.append({"id": fid, "status": status, "note": note, "target": target or data.get("target", ""), "at": _now()})
+    findings.append({"id": fid, "status": status, "note": note,
+                     "target": target or data.get("target", ""),
+                     "evidence_ids": ids, "at": _now()})
     return data
 
 
@@ -220,8 +237,12 @@ def set_coverage(data: dict, planned: int | None = None, done: int | None = None
                  skipped: list | None = None) -> dict:
     cov = data.setdefault("coverage", {"planned": 0, "done": 0, "skipped": []})
     if planned is not None:
+        if int(planned) < 0:
+            raise ContractError(f"planned 不能为负: {planned}")
         cov["planned"] = int(planned)
     if done is not None:
+        if int(done) < 0:
+            raise ContractError(f"done 不能为负: {done}")
         cov["done"] = int(done)
     if skipped:
         cov["skipped"] = [s if isinstance(s, dict) else {"id": str(s), "reason": "", "legacy": True}
@@ -251,14 +272,39 @@ def verify(data: dict) -> list[str]:
                 f"recorded {str(ev.get('sha256'))[:12]} now {current[:12]}"
             )
 
+    ev_by_id = {e.get("id"): e for e in data.get("evidence") or []}
     for item in data.get("findings", []):
-        if item.get("status") == "confirmed" and not any(
-            ev.get("kind") in ("poc", "repro", "artifact", "raw") for ev in data.get("evidence", [])
-        ):
-            problems.append(f"finding {item.get('id')} is confirmed but no repro/PoC evidence is registered")
+        if item.get("status") != "confirmed":
+            continue
+        ids = [str(x) for x in (item.get("evidence_ids") or [])]
+        if not ids:
+            problems.append(
+                f"finding {item.get('id')} 标了 confirmed 但没绑定 evidence_ids（无法证明是这个洞的证据）")
+            continue
+        for eid in ids:
+            ev = ev_by_id.get(eid)
+            if not ev:
+                problems.append(f"finding {item.get('id')} 引用的 {eid} 不存在")
+            elif ev.get("kind") not in ("poc", "repro", "artifact", "raw"):
+                problems.append(
+                    f"finding {item.get('id')} 的 {eid} 类型是 {ev.get('kind')}，不算复现证据")
 
     cov = data.get("coverage") or {}
-    planned, done = int(cov.get("planned") or 0), int(cov.get("done") or 0)
+    try:
+        planned, done = int(cov.get("planned") or 0), int(cov.get("done") or 0)
+    except (TypeError, ValueError):
+        problems.append("coverage.planned/done 不是整数")
+        planned, done = 0, 0
+    if planned < 0:
+        problems.append(f"coverage.planned 为负: {planned}")
+    if done < 0:
+        problems.append(f"coverage.done 为负: {done}")
+    if planned > 0 and done > planned:
+        problems.append(f"coverage.done ({done}) 大于 planned ({planned})")
+    if planned == 0:
+        problems.append(
+            "coverage.planned 未登记：没有计划项就不能证明做过测试，"
+            "至少登记 1 项（task_contract coverage <契约> --planned N）")
     skipped = _skipped_items(cov)
     if skipped:
         ids = [s.get("id") for s in skipped]
@@ -279,9 +325,21 @@ def verify(data: dict) -> list[str]:
                 f"skipped {len(skipped)}, unexplained {unexplained}"
             )
 
+    registered = {str(Path(ev.get("path", "")).resolve()): ev for ev in data.get("evidence") or []}
     for name in data.get("deliverables", []):
-        if not any(Path(ev.get("path", "")).name == Path(name).name for ev in data.get("evidence", [])):
-            problems.append(f"deliverable not produced: {name}")
+        want = Path(str(name)).expanduser()
+        if not want.is_absolute():
+            problems.append(f"deliverable 必须是绝对路径（按文件名匹配会串证据）: {name}")
+            continue
+        key = str(want.resolve())
+        if key not in registered:
+            problems.append(f"deliverable 没登记成证据: {name}")
+        else:
+            ev = registered[key]
+            if not Path(key).is_file():
+                problems.append(f"deliverable 文件不存在: {name}")
+            elif _sha256(Path(key)) != ev.get("sha256"):
+                problems.append(f"deliverable 内容变了（与登记时哈希不符）: {name}")
 
     return problems
 
@@ -337,6 +395,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     p_f.add_argument("--status", required=True, choices=FINDING_STATES)
     p_f.add_argument("--note", default="")
     p_f.add_argument("--target", default="")
+    p_f.add_argument("--evidence", default="", help="证据 ID，逗号分隔（confirmed 必填），如 E1,E2")
 
     p_c = sub.add_parser("coverage", help="record planned/done/skipped")
     p_c.add_argument("file")
@@ -393,11 +452,14 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "evidence":
         add_evidence(data, args.path, args.kind, args.note)
         save(args.file, data)
-        print(f"evidence={len(data['evidence'])}")
+        last = (data.get("evidence") or [])[-1]
+        print(f"{last.get('id')}  {Path(last.get('path','')).name}  "
+              f"{last.get('bytes')}B  sha256={str(last.get('sha256'))[:12]}")
         return 0
 
     if args.cmd == "finding":
-        add_finding(data, args.id, args.status, args.note, args.target)
+        ids = [x.strip() for x in (args.evidence or "").split(",") if x.strip()]
+        add_finding(data, args.id, args.status, args.note, args.target, ids)
         save(args.file, data)
         print(f"findings={len(data['findings'])}")
         return 0
