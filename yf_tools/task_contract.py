@@ -152,13 +152,39 @@ def set_state(data: dict, new_state: str, force: bool = False) -> dict:
     return data
 
 
+_SNAPSHOT_FIELDS = ("target", "scope", "forbidden", "egress", "egress_socks5",
+                    "deliverables", "evidence", "findings", "coverage")
+
+
+def _snapshot_fields(data: dict) -> dict:
+    return {k: data.get(k) for k in _SNAPSHOT_FIELDS}
+
+
+def _snapshot_hash(data: dict) -> str:
+    blob = json.dumps(_snapshot_fields(data), sort_keys=True, ensure_ascii=False)
+    return hashlib.sha256(blob.encode()).hexdigest()
+
+
 def reopen(data: dict, reason: str = "") -> dict:
-    """把已交付的契约拉回 running 做补充（保留历史，不覆盖交付记录）。"""
+    """把已交付的契约拉回 running 做补充。
+
+    交付时的证据/发现/覆盖度会原样封存进 delivered_snapshots，带哈希；
+    reopen 后可以改当前内容，但改不动已封存的那一份。
+    """
     if data.get("state") != "delivered":
         raise ContractError(f"只有 delivered 才能 reopen（当前 {data.get('state')}）")
+    snap = {
+        "at": data.get("delivered_at") or _now(),
+        "sha256": data.get("snapshot_sha256") or _snapshot_hash(data),
+        "reason": reason,
+        "content": _snapshot_fields(data),
+    }
+    data.setdefault("delivered_snapshots", []).append(snap)
     data["state"] = "running"
+    data.pop("snapshot_sha256", None)
     data.setdefault("history", []).append(
-        {"at": _now(), "event": "reopen", "from": "delivered", "reason": reason})
+        {"at": _now(), "event": "reopen", "from": "delivered",
+         "reason": reason, "sealed_sha256": snap["sha256"]})
     return data
 
 
@@ -220,6 +246,35 @@ def add_finding(data: dict, fid: str, status: str, note: str = "", target: str =
     findings.append({"id": fid, "status": status, "note": note,
                      "target": target or data.get("target", ""),
                      "evidence_ids": ids, "at": _now()})
+    return data
+
+
+def add_done(data: dict, task_id: str, evidence_ids: list, note: str = "") -> dict:
+    """登记一个「已完成」的计划项，必须带结果证据。
+
+    只填一个 done 数字等于自称做过；每项都挂证据，才能回头查。
+    done 数字由这里自动维护，不再手填。
+    """
+    _assert_mutable(data)
+    task_id = (task_id or "").strip()
+    if not task_id:
+        raise ContractError("done 项需要 --id（如 http:host:443）")
+    ids = [str(x) for x in (evidence_ids or []) if str(x).strip()]
+    if not ids:
+        raise ContractError("完成项必须用 --evidence 绑定结果证据")
+    known = {e.get("id") for e in data.get("evidence") or []}
+    missing = [i for i in ids if i not in known]
+    if missing:
+        raise ContractError(f"evidence id 不存在: {missing}（已登记: {sorted(known)}）")
+    cov = data.setdefault("coverage", {"planned": 0, "done": 0, "skipped": []})
+    items = cov.setdefault("done_items", [])
+    if any(i.get("id") == task_id for i in items):
+        raise ContractError(f"done id 重复: {task_id}")
+    planned = int(cov.get("planned") or 0)
+    if planned and len(items) >= planned:
+        raise ContractError(f"完成项已达 planned={planned}，先把 planned 加上去")
+    items.append({"id": task_id, "evidence_ids": ids, "note": note, "at": _now()})
+    cov["done"] = len(items)
     return data
 
 
@@ -331,6 +386,14 @@ def verify(data: dict) -> list[str]:
         problems.append(
             "coverage.planned 未登记：没有计划项就不能证明做过测试，"
             "至少登记 1 项（task_contract coverage <契约> --planned N）")
+    done_items = cov.get("done_items") or []
+    if done > 0 and len(done_items) != done:
+        problems.append(
+            f"coverage.done={done} 但只登记了 {len(done_items)} 个完成项；"
+            f"done 必须由 task_contract done 逐项登记（不能用数字冒充）")
+    for i, it in enumerate(done_items):
+        if not (it.get("evidence_ids") or []):
+            problems.append(f"done_items[{i}] ({it.get('id')}) 没绑定结果证据")
     skipped = _skipped_items(cov)
     if skipped:
         ids = [s.get("id") for s in skipped]
@@ -381,6 +444,7 @@ def close(data: dict) -> dict:
         return data
     data["state"] = "delivered"
     data["delivered_at"] = _now()
+    data["snapshot_sha256"] = _snapshot_hash(data)
     data.setdefault("history", []).append({"at": _now(), "event": "delivered"})
     return data
 
@@ -403,6 +467,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     p_set.add_argument("--scope", action="append", default=None)
     p_set.add_argument("--forbidden", action="append", default=None)
     p_set.add_argument("--egress", default=None)
+    p_set.add_argument("--egress-socks5", default=None, help="naabu 用的 socks5 出口，必须显式声明")
     p_set.add_argument("--deliverable", action="append", default=None)
 
     p_state = sub.add_parser("state", help="move the state machine")
@@ -428,6 +493,12 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     p_c.add_argument("--planned", type=int, default=None)
     p_c.add_argument("--done", type=int, default=None)
     p_c.add_argument("--skipped", action="append", default=None)
+
+    p_done = sub.add_parser("done", help="登记一个已完成项（必须带证据）")
+    p_done.add_argument("file")
+    p_done.add_argument("--id", required=True, help="如 http:example.com:443")
+    p_done.add_argument("--evidence", required=True, help="证据 ID，逗号分隔")
+    p_done.add_argument("--note", default="")
 
     p_re = sub.add_parser("reopen", help="把 delivered 拉回 running 继续补")
     p_re.add_argument("file")
@@ -461,12 +532,15 @@ def main(argv: list[str] | None = None) -> int:
     data = load(args.file)
 
     if args.cmd == "set":
+        _assert_mutable(data)
         if args.scope:
             data["scope"] = list(args.scope)
         if args.forbidden:
             data["forbidden"] = list(args.forbidden)
         if args.egress is not None:
             data["egress"] = args.egress
+        if args.egress_socks5 is not None:
+            data["egress_socks5"] = args.egress_socks5
         if args.deliverable:
             data["deliverables"] = list(args.deliverable)
         save(args.file, data)
@@ -498,6 +572,13 @@ def main(argv: list[str] | None = None) -> int:
         set_coverage(data, args.planned, args.done, args.skipped)
         save(args.file, data)
         print(json.dumps(data["coverage"], ensure_ascii=False))
+        return 0
+
+    if args.cmd == "done":
+        ids = [x.strip() for x in (args.evidence or "").split(",") if x.strip()]
+        add_done(data, args.id, ids, args.note)
+        save(args.file, data)
+        print(f"done={data['coverage']['done']}/{data['coverage'].get('planned') or '?'}")
         return 0
 
     if args.cmd == "reopen":

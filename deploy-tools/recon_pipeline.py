@@ -119,7 +119,17 @@ def main() -> int:
             raise SystemExit("契约要求走代理，--no-proxy 与契约冲突，拒绝执行")
         if _norm_egress(args.proxy) != _norm_egress(c_egress):
             raise SystemExit(f"--proxy {args.proxy} 与契约 egress {c_egress} 不一致，拒绝执行")
-        if args.socks5:
+        c_socks = str(cdata.get("egress_socks5") or "").strip()
+        if args.ports:
+            # 端口扫描是唯一用 socks5 的步骤：只校验主机不够，同机两个实例照样换出口
+            if not c_socks:
+                raise SystemExit(
+                    "契约未声明 egress_socks5，--ports 拒绝执行"
+                    "（无法证明 naabu 走契约出口，先在契约里写 egress_socks5）")
+            if _norm_egress(args.socks5) != _norm_egress(c_socks):
+                raise SystemExit(
+                    f"--socks5 {args.socks5} 与契约 egress_socks5 {c_socks} 不一致，拒绝执行")
+        elif args.socks5:
             s_host = _norm_egress(args.socks5).rsplit(":", 1)[0]
             e_host = _norm_egress(c_egress).rsplit(":", 1)[0]
             if s_host != e_host:
