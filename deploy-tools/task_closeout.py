@@ -130,6 +130,16 @@ def main() -> int:
     if root_resolved not in dest.parents:
         raise SystemExit(f"归档路径越界: {dest}")
 
+    # 契约里任何被引用的证据都必须留在可访问的原路径上：
+    # 打包进 tar 后 evidence.path 就指向不存在的文件，verify 会全部失败。
+    protected: set[str] = set()
+    if contract:
+        for ev in contract.get("evidence", []):
+            try:
+                protected.add(str(Path(ev.get("path", "")).resolve()))
+            except (OSError, ValueError):
+                continue
+
     buckets: dict[str, list[Path]] = {"KEEP": [], "ARCHIVE": [], "DROP": [], "UNKNOWN": []}
     for wd in args.workdir:
         root = Path(wd)
@@ -144,6 +154,12 @@ def main() -> int:
                 if p.is_dir() and p.name in DROP_DIRS:
                     buckets["DROP"].append(p)
                 continue
+            try:
+                if str(p.resolve()) in protected:
+                    buckets["KEEP"].append(p)      # 被契约引用的证据不降级
+                    continue
+            except (OSError, ValueError):
+                pass
             buckets[classify(p)].append(p)
 
     size = {k: sum(f.stat().st_size for f in v if f.is_file()) for k, v in buckets.items()}
