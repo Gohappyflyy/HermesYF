@@ -1,6 +1,6 @@
 ---
 name: verify-finding
-description: "Use when you have a hypothesis and need to prove it is a real, exploitable finding before reporting it. Live verification with a marker + negative control — never report an unverified hypothesis as a finding."
+description: "Use when you have a hypothesis and need to prove it is a…"
 version: 0.1.0
 author: "shinthink (Blitz Strike), Hermes Agent"
 license: MIT

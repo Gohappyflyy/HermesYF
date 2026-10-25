@@ -1,6 +1,6 @@
 ---
 name: sast-code-review
-description: "Use when you need to find vulnerabilities in source code itself — injection sinks, unsafe deserialization, hardcoded crypto, path traversal, command injection, unsafe eval/exec, missing auth checks — without running the app. Complements dependency-audit (which checks other people's code) by checking yours."
+description: "Use when you need to find vulnerabilities in source code…"
 version: 0.1.0
 author: "shinthink (Blitz Strike), Hermes Agent"
 license: MIT

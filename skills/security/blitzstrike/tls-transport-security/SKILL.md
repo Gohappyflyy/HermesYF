@@ -1,6 +1,6 @@
 ---
 name: tls-transport-security
-description: "Use when you need to check TLS/SSL configuration on a host — weak cipher suites, deprecated protocol versions (SSLv3/TLS 1.0/1.1), certificate chain issues, missing HSTS, and protocol downgrade risk."
+description: "Use when you need to check TLS/SSL configuration on a ho…"
 version: 0.1.0
 author: "shinthink (Blitz Strike), Hermes Agent"
 license: MIT

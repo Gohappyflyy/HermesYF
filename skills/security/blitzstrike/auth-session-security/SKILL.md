@@ -1,6 +1,6 @@
 ---
 name: auth-session-security
-description: "Use when testing authentication and session handling specifically — JWT vulnerabilities, session fixation, cookie flags, OAuth/SSO misconfiguration, password reset flow flaws, and MFA bypass. Run before api-security-test and web-app-pentest when the app is meaningfully authenticated, since a broken auth layer undermines every access-control finding downstream."
+description: "Use when testing authentication and session handling spe…"
 version: 0.1.0
 author: "shinthink (Blitz Strike), Hermes Agent"
 license: MIT

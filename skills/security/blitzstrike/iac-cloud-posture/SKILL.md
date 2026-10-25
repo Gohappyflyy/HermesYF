@@ -1,6 +1,6 @@
 ---
 name: iac-cloud-posture
-description: "Use when you need to check Terraform/CloudFormation/Kubernetes manifests for misconfiguration before deploy, or check a live AWS/Azure/GCP account's actual posture after deploy — public S3 buckets, overly permissive IAM, open security groups, unencrypted storage, missing logging."
+description: "Use when you need to check Terraform/CloudFormation/Kube…"
 version: 0.1.0
 author: "shinthink (Blitz Strike), Hermes Agent"
 license: MIT

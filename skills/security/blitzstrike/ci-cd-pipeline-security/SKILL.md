@@ -1,6 +1,6 @@
 ---
 name: ci-cd-pipeline-security
-description: "Use when you need to check CI/CD pipeline configuration for supply-chain risk — poisoned pipeline execution, secret exposure to untrusted code, overly broad permissions on pipeline tokens, and unpinned third-party actions/steps. Distinct from secrets-scan (which checks for leaked secrets already committed) — this checks whether the pipeline itself is designed to leak or misuse them."
+description: "Use when you need to check CI/CD pipeline configuration…"
 version: 0.1.0
 author: "shinthink (Blitz Strike), Hermes Agent"
 license: MIT

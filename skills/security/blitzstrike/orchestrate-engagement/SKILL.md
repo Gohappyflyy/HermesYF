@@ -1,6 +1,6 @@
 ---
 name: orchestrate-engagement
-description: "Use when the user asks for a full security engagement ("fullscan", "audit this", "pentest this", "scan my target") or any end-to-end assessment. You are the orchestrator — Blitz Strike provides the deterministic analysis and verification tools you drive. Run recon → analyze → verify → review → report without babysitting."
+description: "Use when the user asks for a full security engagement"
 version: 0.1.0
 author: "shinthink (Blitz Strike), Hermes Agent"
 license: MIT

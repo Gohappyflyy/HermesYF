@@ -1,6 +1,6 @@
 ---
 name: web-hunting
-description: "Use when the target is a LIVE web application or API and you are bug hunting — advanced, beyond basic OWASP. Deep recon, advanced injection (HTTP request smuggling, cache attacks, race conditions, SSRF bypass), advanced auth (JWT/OAuth), client-side attacks, and the chain mindset. Every finding still passes marker + negative control."
+description: "Use when the target is a LIVE web application or API and…"
 version: 0.1.0
 author: "shinthink (Blitz Strike), Hermes Agent"
 license: MIT

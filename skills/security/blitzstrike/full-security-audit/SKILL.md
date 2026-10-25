@@ -1,6 +1,6 @@
 ---
 name: full-security-audit
-description: "Use when the user asks for a full security audit, pentest, vulnerability scan, or "is this safe to ship" check without specifying a narrower scope. The master playbook — chains recon through reporting across whatever surfaces the target actually has (skip skills that don't apply, e.g. no mobile-app-scan if there's no mobile app)."
+description: "Use when the user asks for a full security audit"
 version: 0.1.0
 author: "shinthink (Blitz Strike), Hermes Agent"
 license: MIT

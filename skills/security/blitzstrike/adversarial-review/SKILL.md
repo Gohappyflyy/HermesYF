@@ -1,6 +1,6 @@
 ---
 name: adversarial-review
-description: "Use before confirming a verified finding as real. Run the ten adversarial questions, score confidence, dedup shared-root findings, and reject anything that does not survive. This is the anti-hallucination gate between "hypothesis" and "confirmed finding"."
+description: "Use before confirming a verified finding as real. Run th…"
 version: 0.1.0
 author: "shinthink (Blitz Strike), Hermes Agent"
 license: MIT

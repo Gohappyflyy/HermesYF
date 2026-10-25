@@ -1,6 +1,6 @@
 ---
 name: business-logic-fuzzing
-description: "Use for the vulnerability classes automated scanners structurally cannot find — race conditions, workflow/state-machine bypass, price or quantity manipulation, and abuse of multi-step flows. This is the highest-value, most manual skill in the repo; run it after the automated skills, informed by what they revealed about the app's structure."
+description: "Use for the vulnerability classes automated scanners str…"
 version: 0.1.0
 author: "shinthink (Blitz Strike), Hermes Agent"
 license: MIT

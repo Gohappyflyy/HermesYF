@@ -1,6 +1,6 @@
 ---
 name: dast-active-scan
-description: "Use for automated black-box scanning of a live target with ZAP and nuclei — the broad-coverage automated sweep that complements the targeted manual testing in web-app-pentest and api-security-test. Good as a fast first pass or a final coverage check before shipping."
+description: "Use for automated black-box scanning of a live target wi…"
 version: 0.1.0
 author: "shinthink (Blitz Strike), Hermes Agent"
 license: MIT

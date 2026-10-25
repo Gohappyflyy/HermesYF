@@ -1,6 +1,6 @@
 ---
 name: write-report
-description: "Use when finalizing confirmed findings into a submission-ready report (bug bounty, pentest deliverable, or audit). Produce a report with root cause, reproduction, CVSS, impact, and remediation — indistinguishable from a top-tier human hunter."
+description: "Use when finalizing confirmed findings into a submission…"
 version: 0.1.0
 author: "shinthink (Blitz Strike), Hermes Agent"
 license: MIT

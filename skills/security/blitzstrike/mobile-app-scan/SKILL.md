@@ -1,6 +1,6 @@
 ---
 name: mobile-app-scan
-description: "Use when you need to check an iOS or Android app build for hardcoded secrets, insecure local storage, weak transport security, and exposed debug/backup surfaces. Covers static analysis of the built app package (APK/IPA); combine with web-app-pentest/api-security-test for the app's backend."
+description: "Use when you need to check an iOS or Android app build f…"
 version: 0.1.0
 author: "shinthink (Blitz Strike), Hermes Agent"
 license: MIT

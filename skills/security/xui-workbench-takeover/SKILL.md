@@ -1,6 +1,6 @@
 ---
 name: xui-workbench-takeover
-description: "Use when target runs a 3X-UI multi-panel workbench (x-ui.example-panel.tld style, Flask, /xui/api/* endpoints, panel-management UI). Covers the full chain from zero-credential recon to root, with working PoCs and the exact pitfalls that break each step."
+description: "Use when target runs a 3X-UI multi-panel workbench"
 version: 1.0.0
 author: "Gohappyflyy, HermesYF"
 license: MIT

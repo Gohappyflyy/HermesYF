@@ -4,7 +4,7 @@ version: 1.0.0
 author: "Gohappyflyy, 御风"
 license: MIT
 platforms: [linux, macos, windows]
-description: Extract, categorize, and format API keys, tokens, and secrets from large unstructured text dumps (bash_history, log files, config dumps, extracted archives). Multi-source regex extraction covering 25+ AI provider formats with placeholder filtering and provider categorization.
+description: "Extract…"
 triggers:
   - extract API key
   - extract credentials

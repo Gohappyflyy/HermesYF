@@ -1,6 +1,6 @@
 ---
 name: findings-report
-description: "Use to turn raw output from one or more other skills into a single ranked, remediation-ready report. Run this last, after any combination of the other skills, to synthesize findings/*.json and findings/*.txt into something a developer or stakeholder can actually act on."
+description: "Use to turn raw output from one or more other skills int…"
 version: 0.1.0
 author: "shinthink (Blitz Strike), Hermes Agent"
 license: MIT

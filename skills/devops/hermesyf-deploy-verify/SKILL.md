@@ -1,6 +1,6 @@
 ---
 name: hermesyf-deploy-verify
-description: Use when 新机部署 HermesYF 后验收 / 部署自检 / 技能记忆没同步。一条命令跑 14 项检查并定位是哪一步没跑完。
+description: "Use when 新机部署 HermesYF 后验收 / 部署自检 / 技能记忆没同步。一条命令跑 14 项检查…"
 ---
 
 # HermesYF 新机部署验收

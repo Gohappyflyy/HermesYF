@@ -1,6 +1,6 @@
 ---
 name: smart-contract-audit
-description: "Use when you need to audit Solidity/Vyper smart contracts for reentrancy, access control flaws, integer overflow/underflow, unchecked external calls, price/oracle manipulation, and other known on-chain vulnerability classes before deployment or before moving real funds through a contract."
+description: "Use when you need to audit Solidity/Vyper smart contract…"
 version: 0.1.0
 author: "shinthink (Blitz Strike), Hermes Agent"
 license: MIT

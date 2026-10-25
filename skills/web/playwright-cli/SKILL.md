@@ -1,6 +1,6 @@
 ---
 name: playwright-cli
-description: "Drive a real browser for automation and request interception."
+description: "Drive a real browser for automation and request intercep…"
 version: 0.1.0
 author: "trhhubsd (ARTEX), Hermes Agent"
 license: AGPL-3.0

@@ -1,6 +1,6 @@
 ---
 name: secrets-scan
-description: "Use when you need to find leaked API keys, tokens, passwords, or credentials in a git repo — including history, not just the current working tree. Run this before every push to a new public repo and as a standing part of full-security-audit."
+description: "Use when you need to find leaked API keys"
 version: 0.1.0
 author: "shinthink (Blitz Strike), Hermes Agent"
 license: MIT

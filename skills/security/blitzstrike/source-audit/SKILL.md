@@ -1,6 +1,6 @@
 ---
 name: source-audit
-description: "Use when auditing source code (PHP/JS/Python/Java/etc.) for vulnerabilities — static source→sink taint, route confusion/dispatch abuse, deserialization, type juggling, and mass assignment. This is Blitz Strike's deterministic static-analysis moat, distinct from live/dynamic testing."
+description: "Use when auditing source code"
 version: 0.1.0
 author: "shinthink (Blitz Strike), Hermes Agent"
 license: MIT

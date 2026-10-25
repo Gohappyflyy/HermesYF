@@ -1,6 +1,6 @@
 ---
 name: api-security-test
-description: "Use when testing a REST or GraphQL API specifically — broken object-level authorization (BOLA/IDOR), mass assignment, excessive data exposure, missing rate limiting, and GraphQL-specific risks like introspection exposure and query depth abuse. Pulls from OWASP API Security Top 10 rather than the general web OWASP Top 10."
+description: "Use when testing a REST or GraphQL API specifically"
 version: 0.1.0
 author: "shinthink (Blitz Strike), Hermes Agent"
 license: MIT

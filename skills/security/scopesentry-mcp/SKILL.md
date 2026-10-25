@@ -1,6 +1,6 @@
 ---
 name: scopesentry-mcp
-description: "Manage ScopeSentry scans, tasks, and assets via its MCP server."
+description: "Manage ScopeSentry scans…"
 version: 0.1.0
 author: "trhhubsd (ARTEX), Hermes Agent"
 license: AGPL-3.0

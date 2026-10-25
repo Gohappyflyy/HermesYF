@@ -1,6 +1,6 @@
 ---
 name: container-image-scan
-description: "Use when you need to check a Docker/OCI image or Dockerfile for vulnerable base images, known-CVE packages baked into layers, exposed secrets in build layers, and bad Dockerfile practices (running as root, secrets in ARG/ENV, unpinned base tags)."
+description: "Use when you need to check a Docker/OCI image or Dockerf…"
 version: 0.1.0
 author: "shinthink (Blitz Strike), Hermes Agent"
 license: MIT

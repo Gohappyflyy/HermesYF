@@ -1,6 +1,6 @@
 ---
 name: flask-debug-rce
-description: "Use when a Flask/Werkzeug app runs with debug=True (every 500 leaks source + traceback, /console interactive debugger). Do the SOURCE-DISCLOSURE path FIRST — read app.py line-by-line for sinks (eval/exec/os.system/SECRET_KEY/hardcoded creds/SQL) and exploit each. The PIN-locked console is a SECONDARY path (derive PIN from machine-id+MAC+username+mod_path)."
+description: "Use when a Flask/Werkzeug app runs with debug=True"
 version: 0.1.0
 author: "shinthink (Blitz Strike), Hermes Agent"
 license: MIT

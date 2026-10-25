@@ -1,6 +1,6 @@
 ---
 name: dependency-audit
-description: "Use when you need to know which third-party packages/libraries in a project have known CVEs, and whether a fix version exists. Covers npm/yarn/pnpm, pip/poetry, Go modules, Cargo, and Ruby Gemfiles via OSV plus ecosystem-native tools."
+description: "Use when you need to know which third-party packages/lib…"
 version: 0.1.0
 author: "shinthink (Blitz Strike), Hermes Agent"
 license: MIT

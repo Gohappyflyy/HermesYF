@@ -1,6 +1,6 @@
 ---
 name: attack-surface-recon
-description: "Use when you need to know what's actually exposed for a domain, host, or repo before testing it — subdomains, live hosts, open ports, exposed endpoints, and tech stack fingerprinting. Almost always the first step of a real audit; everything downstream (web-app-pentest, api-security-test, dast-active-scan) targets what this finds."
+description: "Use when you need to know what's actually exposed for a…"
 version: 0.1.0
 author: "shinthink (Blitz Strike), Hermes Agent"
 license: MIT
