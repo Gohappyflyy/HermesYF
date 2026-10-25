@@ -94,6 +94,8 @@ def main() -> int:
 
     domain = _clean_domain(args.domain)
 
+    if args.contract and args.allow_outside:
+        raise SystemExit("契约场景不允许 --allow-outside（产物必须在受保护目录内）")
     outdir = Path(args.out or (RECON_BASE / domain)).resolve()
     base = RECON_BASE.resolve()
     if not args.allow_outside and base not in outdir.parents and outdir != base:
@@ -117,6 +119,12 @@ def main() -> int:
             raise SystemExit("契约要求走代理，--no-proxy 与契约冲突，拒绝执行")
         if _norm_egress(args.proxy) != _norm_egress(c_egress):
             raise SystemExit(f"--proxy {args.proxy} 与契约 egress {c_egress} 不一致，拒绝执行")
+        if args.socks5:
+            s_host = _norm_egress(args.socks5).rsplit(":", 1)[0]
+            e_host = _norm_egress(c_egress).rsplit(":", 1)[0]
+            if s_host != e_host:
+                raise SystemExit(
+                    f"--socks5 {args.socks5} 与契约 egress {c_egress} 不是同一个出口主机，拒绝执行")
         forbidden = [str(x).strip().lower() for x in (cdata.get("forbidden") or []) if str(x).strip()]
         for f in forbidden:
             if domain == f or domain.endswith("." + f.lstrip("*.")):
@@ -124,10 +132,13 @@ def main() -> int:
         try:
             sys.path.insert(0, os.environ.get("HERMESYF_REPO", "/root/HermesYF"))
             from yf_tools.assessment_run import _target_allowed
-        except Exception:
-            _target_allowed = None
+        except Exception as exc:
+            # 范围校验器加载不了就一个包都不发：宁可停，也不能在没校验范围的情况下扫
+            raise SystemExit(f"无法加载范围校验器，拒绝执行: {exc}")
         scope = cdata.get("scope") or []
-        if _target_allowed and scope and not _target_allowed(domain, scope):
+        if not scope:
+            raise SystemExit("契约没有 scope，拒绝执行")
+        if not _target_allowed(domain, scope):
             raise SystemExit(f"{domain} 不在契约 scope 内: {scope}")
 
     outdir.mkdir(parents=True, exist_ok=True)

@@ -28,11 +28,13 @@
 from __future__ import annotations
 
 import argparse
+import fcntl
 import fnmatch
 import hashlib
 import json
 import os
 import re
+import sys
 import shutil
 import tarfile
 import time
@@ -50,10 +52,12 @@ KEEP_NAME_HINTS = [
     "poc", "exploit", "extract", "spider", "payload", "index",
 ]
 ARCHIVE_PATTERNS = ["*.jsonl", "*.ndjson", "*.csv", "*.txt", "*.xml", "*.json", "*.db"]
+# *.log 故意不在这里：命中日志常常就是证据，误删不可逆，统一进 UNKNOWN 人工判断
 DROP_PATTERNS = [
-    "*.log", "*.tmp", "*.temp", "*.bak", "*.swp", "*.pyc", "*.pyo", "*.err",
+    "*.tmp", "*.temp", "*.bak", "*.swp", "*.pyc", "*.pyo", "*.err",
     "*.retry", "*.lock", ".DS_Store", "Thumbs.db",
 ]
+LOG_PATTERNS = ["*.log", "*.out"]
 DROP_DIRS = ["__pycache__", ".pytest_cache", ".mypy_cache", "node_modules"]
 
 
@@ -88,6 +92,8 @@ def classify(p: Path) -> str:
         return "KEEP"
     if any(fnmatch.fnmatch(low, pat) for pat in DROP_PATTERNS):
         return "DROP"
+    if any(fnmatch.fnmatch(low, pat) for pat in LOG_PATTERNS):
+        return "UNKNOWN"          # 日志可能是证据，不自动删
     if any(h in low for h in KEEP_NAME_HINTS):
         return "KEEP"
     if any(fnmatch.fnmatch(low, pat) for pat in KEEP_PATTERNS):
@@ -125,7 +131,11 @@ def main() -> int:
         target = args.target or Path(args.workdir[0]).name
 
     stamp = time.strftime("%Y-%m-%d")
-    dest = (ARCHIVE_ROOT / safe_target(target) / stamp).resolve()
+    if args.contract:
+        cid = hashlib.sha256(str(Path(args.contract).resolve()).encode()).hexdigest()[:8]
+    else:
+        cid = "run" + time.strftime("%H%M%S")
+    dest = (ARCHIVE_ROOT / safe_target(target) / f"{stamp}_{cid}").resolve()
     root_resolved = ARCHIVE_ROOT.resolve()
     if root_resolved not in dest.parents:
         raise SystemExit(f"归档路径越界: {dest}")
@@ -167,6 +177,15 @@ def main() -> int:
     print(f"=== 收尾审计 target={target} ===")
     for k in ("KEEP", "ARCHIVE", "DROP", "UNKNOWN"):
         print(f"  {k:<8} {len(buckets[k]):>4} 个  {human(size[k]):>9}")
+    lock_key = hashlib.sha256(
+        str(Path(args.contract or args.workdir[0]).resolve()).encode()).hexdigest()[:12]
+    lock_path = Path(os.environ.get("TMPDIR", "/tmp")) / f"closeout_{lock_key}.lock"
+    lock_fh = lock_path.open("w")
+    try:
+        fcntl.flock(lock_fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        raise SystemExit(f"同一任务已有 closeout 在跑（{lock_path}），拒绝并发")
+
     print(f"\n归档目录: {dest}")
     print(f"模式: {'APPLY（会移动+删除）' if args.apply else 'DRY-RUN（只打印）'}")
 
@@ -246,15 +265,31 @@ def main() -> int:
             used.add(arc)
             pairs.append((f, arc))
         tar_path = dest / "raw.tar.gz"
+        src_meta = {arc: (sha256(f), f.stat().st_size) for f, arc in pairs}
         with tarfile.open(tar_path, "w:gz") as tf:
             for f, arc in pairs:
                 tf.add(f, arcname=arc)
+        bad = []
         with tarfile.open(tar_path) as tf:
-            members = {m.name: m.size for m in tf.getmembers() if m.isfile()}
-        bad = [(arc, f) for f, arc in pairs if members.get(arc) != f.stat().st_size]
+            for m in tf.getmembers():
+                if not m.isfile():
+                    continue
+                want_hash, want_size = src_meta.get(m.name, ("", -1))
+                if m.size != want_size:
+                    bad.append((m.name, "size"))
+                    continue
+                fh = tf.extractfile(m)
+                h = hashlib.sha256()
+                while chunk := fh.read(1 << 20):
+                    h.update(chunk)
+                if h.hexdigest() != want_hash:
+                    bad.append((m.name, "sha256"))
+            missing = [arc for _, arc in pairs if arc not in {m.name for m in tf.getmembers()}]
+        if missing:
+            bad += [(m, "missing-member") for m in missing]
         if bad:
-            print(f"  !! 归档校验失败，源文件全部保留: {bad[:3]}")
-            manifest["archive_failed"] = [str(f) for _, f in bad]
+            print(f"  !! 归档校验失败（逐成员哈希），源文件全部保留: {bad[:3]}")
+            manifest["archive_failed"] = [str(m) for m, _ in bad]
         else:
             manifest["raw"].append({"name": tar_path.name, "sha256": sha256(tar_path),
                                     "bytes": tar_path.stat().st_size, "files": len(pairs)})
@@ -309,16 +344,19 @@ def main() -> int:
             manifest["dropped"].append(str(f))
 
     manifest["delete_failed"] = failed_del
+    manifest["state"] = "partial" if failed_del else "complete"
     manifest["unknown"] = [str(f) for f in buckets["UNKNOWN"]]
-    (dest / "closeout.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=1),
-                                        encoding="utf-8")
+    with (dest / "closeout.json").open("w", encoding="utf-8") as fh:
+        fh.write(json.dumps(manifest, ensure_ascii=False, indent=1))
+        fh.flush()
+        os.fsync(fh.fileno())
 
     print(f"\n完成。归档 {len(manifest['keep'])} 个关键产物"
           f"{' + raw.tar.gz' if manifest['raw'] else ''}，清理 {len(manifest['dropped'])} 个废弃项")
     if failed_del:
         print(f"!! {len(failed_del)} 项没删掉，见 closeout.json 的 delete_failed")
     print(f"清单: {dest/'closeout.json'}")
-    return 0
+    return 1 if failed_del else 0
 
 
 if __name__ == "__main__":

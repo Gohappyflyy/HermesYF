@@ -226,9 +226,13 @@ def _host_of(target: str) -> str:
     if "://" not in s:
         s = "http://" + s
     try:
-        return (urlsplit(s).hostname or "").lower().rstrip(".")
+        parts = urlsplit(s)
     except ValueError:
         return ""
+    # 带凭据的 URL 一律不认：不同层对 user:pass@host 的解释可能不一致
+    if parts.username or parts.password:
+        return ""
+    return (parts.hostname or "").lower().rstrip(".")
 
 
 def _target_allowed(target: str, scopes: list) -> bool:

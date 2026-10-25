@@ -128,9 +128,11 @@ def new(target: str, operation: str = "active", task: str = "") -> dict:
     }
 
 
-def set_state(data: dict, new_state: str) -> dict:
+def set_state(data: dict, new_state: str, force: bool = False) -> dict:
     if new_state not in STATES:
         raise ContractError(f"state must be one of {STATES}")
+    if data.get("state") == "delivered" and new_state != "delivered" and not force:
+        raise ContractError("delivered 不能直接回退；要改先 reopen")
     cur = data.get("state", "draft")
     if new_state == cur:
         return data
@@ -141,12 +143,33 @@ def set_state(data: dict, new_state: str) -> dict:
             raise ContractError("cannot ready a contract without a target")
         if not data.get("scope"):
             raise ContractError("cannot ready a contract without an explicit scope list")
+    if new_state == "verify" and cur == "running":
+        done = int((data.get("coverage") or {}).get("done") or 0)
+        if done <= 0:
+            raise ContractError("done=0：没有任何已完成的计划项，不能进 verify")
     data["state"] = new_state
     data.setdefault("history", []).append({"at": _now(), "event": "state", "from": cur, "to": new_state})
     return data
 
 
+def reopen(data: dict, reason: str = "") -> dict:
+    """把已交付的契约拉回 running 做补充（保留历史，不覆盖交付记录）。"""
+    if data.get("state") != "delivered":
+        raise ContractError(f"只有 delivered 才能 reopen（当前 {data.get('state')}）")
+    data["state"] = "running"
+    data.setdefault("history", []).append(
+        {"at": _now(), "event": "reopen", "from": "delivered", "reason": reason})
+    return data
+
+
+def _assert_mutable(data: dict) -> None:
+    """已交付的契约只读：否则交付记录可以被事后改写，审计属性就没了。"""
+    if data.get("state") == "delivered":
+        raise ContractError("契约已 delivered，只读；要改先 task_contract reopen")
+
+
 def add_evidence(data: dict, path: str, kind: str = "artifact", note: str = "") -> dict:
+    _assert_mutable(data)
     p = Path(path)
     if not p.is_file():
         raise ContractError(f"evidence file does not exist: {p}")
@@ -173,6 +196,7 @@ def add_finding(data: dict, fid: str, status: str, note: str = "", target: str =
 
     只检查「存在某类证据」时，拿一个无关的 hosts.txt 就能把 finding 标成已复现。
     """
+    _assert_mutable(data)
     if status not in FINDING_STATES:
         raise ContractError(f"finding status must be one of {FINDING_STATES}")
     ids = [str(x) for x in (evidence_ids or [])]
@@ -216,6 +240,7 @@ def add_skipped(data: dict, task_id: str, reason: str) -> dict:
     只允许字符串列表时，把 ["x","x","x",...] 塞满就能让 coverage 看起来齐了 ——
     所以 id 唯一、原因必填、数量封顶三条都在这里挡住。
     """
+    _assert_mutable(data)
     task_id = (task_id or "").strip()
     reason = (reason or "").strip()
     if not task_id or not reason:
@@ -235,6 +260,7 @@ def add_skipped(data: dict, task_id: str, reason: str) -> dict:
 
 def set_coverage(data: dict, planned: int | None = None, done: int | None = None,
                  skipped: list | None = None) -> dict:
+    _assert_mutable(data)
     cov = data.setdefault("coverage", {"planned": 0, "done": 0, "skipped": []})
     if planned is not None:
         if int(planned) < 0:
@@ -403,6 +429,10 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     p_c.add_argument("--done", type=int, default=None)
     p_c.add_argument("--skipped", action="append", default=None)
 
+    p_re = sub.add_parser("reopen", help="把 delivered 拉回 running 继续补")
+    p_re.add_argument("file")
+    p_re.add_argument("--reason", default="")
+
     p_skip = sub.add_parser("skip", help="记录一个计划内跳过的任务（必须有原因）")
     p_skip.add_argument("file")
     p_skip.add_argument("--id", required=True, help="任务标识，如 http-baseline:host:443")
@@ -468,6 +498,12 @@ def main(argv: list[str] | None = None) -> int:
         set_coverage(data, args.planned, args.done, args.skipped)
         save(args.file, data)
         print(json.dumps(data["coverage"], ensure_ascii=False))
+        return 0
+
+    if args.cmd == "reopen":
+        reopen(data, args.reason)
+        save(args.file, data)
+        print("reopened -> running")
         return 0
 
     if args.cmd == "skip":
