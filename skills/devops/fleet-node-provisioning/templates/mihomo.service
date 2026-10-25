@@ -1,0 +1,14 @@
+[Unit]
+Description=Mihomo Meta Proxy
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/root/mihomo -d /root -f /root/Sxrconfig.yaml
+Restart=always
+RestartSec=3
+LimitNOFILE=1048576
+
+[Install]
+WantedBy=multi-user.target

@@ -1,6 +1,6 @@
 ---
 name: engagement-session-ops
-description: ""
+description: "Use when 开新靶场/新目标会话：VPN、可达性、工作目录三步开场检查。"
 version: 0.1.0
 author: "shinthink (Blitz Strike), Hermes Agent"
 license: MIT
